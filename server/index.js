@@ -125,8 +125,7 @@ server.registerTool(
         query,
         campus: parkingService.campus,
         results,
-        parkingResults: lots,
-        lotIds: results.map((result) => result.id)
+        parkingResults: lots
       },
       content: textContent(
         [

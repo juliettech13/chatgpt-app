@@ -104,10 +104,8 @@ function App() {
     });
   }
 
-  async function openFullscreen(lotId = selectedLotId) {
-    if (lotId !== selectedLotId) {
-      setSelectedLotId(lotId);
-    }
+  async function openFullscreen(lotId: string) {
+    if (lotId !== selectedLotId) setSelectedLotId(lotId);
     setDisplayMode("fullscreen");
     syncContext(lotId, "fullscreen");
     await bridge?.requestDisplayMode?.({ mode: "fullscreen" });

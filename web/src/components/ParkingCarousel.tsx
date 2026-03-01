@@ -6,7 +6,7 @@ type Props = {
   lots: ParkingLot[];
   selectedLotId: string;
   onSelectLot: (lotId: string) => void;
-  onOpenFullscreen: (lotId?: string) => void;
+  onOpenFullscreen: (lotId: string) => void;
 };
 
 export function ParkingCarousel({ lots, selectedLotId, onSelectLot, onOpenFullscreen }: Props) {
