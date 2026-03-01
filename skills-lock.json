@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "skills": {
+    "create-mcp-app": {
+      "source": "modelcontextprotocol/ext-apps",
+      "sourceType": "github",
+      "computedHash": "ea636919320b687b80e53354ae0e28e95e5cbaa6bc09d5faa541aff35f2ebf52"
+    },
+    "mapbox-search-integration": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "48ac28939d05d5cad4c4267b4c7ef10acc01f2a3e3bb797348bfe011d224b8c9"
+    },
+    "mapbox-search-patterns": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "9e62c93fe3028e0b1abfe3c560884d5aab1964e4368cb152fe1fe5a2c4c28ef1"
+    },
+    "mapbox-style-patterns": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "88f9d0525d694baa9bea9af6f6f1d2de2de4c3dc962ece5af34c4aa0d8c4f2e9"
+    },
+    "mapbox-token-security": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "a507dd1b8791d09a1c31e5b8988a5db009f5406626d772927e77c16245d0ea3b"
+    },
+    "mapbox-web-integration-patterns": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "e0494db88315b601691fa8bfed5ac626fadd1114473d8fa7e077ab6a1d6e0133"
+    },
+    "mapbox-web-performance-patterns": {
+      "source": "mapbox/mapbox-agent-skills",
+      "sourceType": "github",
+      "computedHash": "fbc865fcc67d97a68fcdc5d2a532222f38470b742a2d9cd67c8c53fa26e62208"
+    },
+    "mcp-apps-builder": {
+      "source": "mcp-use/mcp-use",
+      "sourceType": "github",
+      "computedHash": "918477496b0b4394f1388defa5e4f80f5617968f94095cdfdff2edcf97ca145f"
+    },
+    "modern-javascript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "70bc273dcb90ed035be512862b658d1bd80daa135e24d346c7111f1830f934c5"
+    },
+    "react-useeffect": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "computedHash": "8c24990b50f431a570f3ad1f60632dee154431861547103047f6ce80092ca734"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "4365be772fd3b41994a72ad478472c6d680678e7f3859860ab010e9c46e48ee0"
+    }
+  }
+}

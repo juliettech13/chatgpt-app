@@ -1,0 +1,120 @@
+.lot-inspector-panel {
+  background: color-mix(in srgb, Canvas 92%, transparent);
+  backdrop-filter: blur(7px);
+  border: 1px solid color-mix(in srgb, CanvasText 16%, transparent);
+  border-radius: 12px;
+  padding: 8px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.lot-inspector-panel__topbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lot-inspector-panel__close-btn {
+  border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: color-mix(in srgb, Canvas 94%, transparent);
+  color: CanvasText;
+  cursor: pointer;
+}
+
+.lot-inspector-panel__close-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lot-inspector-panel__media {
+  width: 100%;
+  height: 176px;
+  border-radius: 10px;
+}
+
+.lot-inspector-panel__media--garage {
+  background: radial-gradient(circle at 25% 25%, #3a7bd5, #1e3d73 58%, #15253f);
+}
+
+.lot-inspector-panel__media--surface {
+  background: radial-gradient(circle at 20% 20%, #45b27f, #2a7f5a 58%, #14513b);
+}
+
+.lot-inspector-panel__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.lot-inspector-panel__address {
+  margin: 0;
+  color: color-mix(in srgb, CanvasText 72%, transparent);
+}
+
+.lot-inspector-panel__chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lot-inspector-panel__chips span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+  padding: 3px 8px;
+  background: color-mix(in srgb, Canvas 92%, transparent);
+}
+
+.lot-inspector-panel__list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.lot-inspector-panel__list div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.lot-inspector-panel__list dt {
+  color: color-mix(in srgb, CanvasText 72%, transparent);
+}
+
+.lot-inspector-panel__list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.lot-inspector-panel__note {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, #e1d8a0 72%, transparent);
+  background: color-mix(in srgb, #fffbe7 86%, transparent);
+  border-radius: 8px;
+}
+
+.lot-inspector-panel__book-btn {
+  border: 1px solid #3561d8;
+  border-radius: 999px;
+  background: #3561d8;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.lot-inspector-panel__message {
+  margin: 0;
+  border: 1px solid #cfe6d0;
+  background: #ecf8ef;
+  border-radius: 8px;
+  padding: 8px;
+}
+
