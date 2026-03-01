@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+
 import type { ParkingLot } from "../types";
+
 import { LotInspectorPanel } from "./LotInspectorPanel";
 import { LotOptionsPanel } from "./LotOptionsPanel";
-import { MapPanelPlaceholder } from "./MapPanelPlaceholder";
+import { MapPanel } from "./MapPanel";
+
 import "../css/fullscreen-layout.css";
 
 type Props = {
@@ -12,6 +15,7 @@ type Props = {
   onBook: (lot: ParkingLot) => void;
   bookingMessage: string | null;
   campusAddress: string;
+  isSubmittingBooking: boolean;
 };
 
 export function FullscreenLayout({
@@ -20,7 +24,8 @@ export function FullscreenLayout({
   onSelectLot,
   onBook,
   bookingMessage,
-  campusAddress
+  campusAddress,
+  isSubmittingBooking
 }: Props) {
   const [isInspectorOpen, setInspectorOpen] = useState(true);
   const selectedLot = lots.find((lot) => lot.id === selectedLotId) || lots[0];
@@ -32,7 +37,12 @@ export function FullscreenLayout({
 
   return (
     <section className="fullscreen-layout">
-      <MapPanelPlaceholder lots={lots} selectedLotId={selectedLot.id} />
+      <MapPanel
+        lots={lots}
+        selectedLotId={selectedLot.id}
+        onSelectLot={handleSelectLot}
+        onMarkerActivate={() => setInspectorOpen(true)}
+      />
       <LotOptionsPanel lots={lots} selectedLotId={selectedLot.id} onSelectLot={handleSelectLot} />
       {isInspectorOpen ? (
         <LotInspectorPanel
@@ -41,6 +51,7 @@ export function FullscreenLayout({
           bookingMessage={bookingMessage}
           address={campusAddress}
           onClose={() => setInspectorOpen(false)}
+          isSubmittingBooking={isSubmittingBooking}
         />
       ) : null}
     </section>

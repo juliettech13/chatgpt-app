@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+
 import { FullscreenLayout } from "./components/FullscreenLayout";
 import { ParkingCarousel } from "./components/ParkingCarousel";
 import type { ParkingLot, ToolOutput, WidgetState } from "./types";
+
 import "./css/component.css";
+import "./css/parking-lot-card.css";
 
 type OpenAIBridge = {
   toolOutput?: Partial<ToolOutput> & { parkingResults?: ParkingLot[] };
   widgetState?: WidgetState;
+  displayMode?: "inline" | "fullscreen";
   requestDisplayMode?: (params: { mode: "inline" | "fullscreen" }) => Promise<{ mode: "inline" | "fullscreen" }>;
   setWidgetState?: (state: WidgetState & Record<string, unknown>) => void;
   callTool?: (name: string, args: Record<string, unknown>) => Promise<{
@@ -47,12 +51,17 @@ function App() {
   const initialLotId = initialState.selectedLotId || output.lots[0]?.id || "";
 
   const [selectedLotId, setSelectedLotId] = useState(initialLotId);
-  const [displayMode, setDisplayMode] = useState<"inline" | "fullscreen">(initialState.displayMode || "inline");
-  const [bookingMessage, setBookingMessage] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState((initialState.displayMode || "inline") as "inline" | "fullscreen");
+  const [bookingMessage, setBookingMessage] = useState(null as string | null);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
 
   useEffect(() => {
     const syncFromBridge = () => {
       setOutput(normalizeOutput(window.openai?.toolOutput));
+      const hostDisplayMode = window.openai?.displayMode;
+      if (hostDisplayMode === "inline" || hostDisplayMode === "fullscreen") {
+        setDisplayMode(hostDisplayMode);
+      }
     };
 
     const onMessage = (event: MessageEvent) => {
@@ -111,25 +120,32 @@ function App() {
     await bridge?.requestDisplayMode?.({ mode: "fullscreen" });
   }
 
-  function handleSelectLot(lotId: string) {
+  function handleFullscreenSelectLot(lotId: string) {
     setSelectedLotId(lotId);
     syncContext(lotId, displayMode);
   }
 
   async function handleMockBook(lot: ParkingLot) {
+    if (isSubmittingBooking) return;
+    setIsSubmittingBooking(true);
     if (!bridge?.callTool) {
       setBookingMessage(`Mock booking requested for ${lot.name}.`);
+      setIsSubmittingBooking(false);
       return;
     }
-    const response = await bridge.callTool("book_parking", {
-      lotId: lot.id,
-      date: output.date
-    });
-    const message =
-      response?.content?.find((item) => item.type === "text")?.text ||
-      `Mock booking confirmed for ${lot.name} on ${output.date}.`;
-    setBookingMessage(message);
-    bridge?.sendFollowUpMessage?.({ text: message });
+    try {
+      const response = await bridge.callTool("book_parking", {
+        lotId: lot.id,
+        date: output.date
+      });
+      const message =
+        response?.content?.find((item) => item.type === "text")?.text ||
+        `Mock booking confirmed for ${lot.name} on ${output.date}.`;
+      setBookingMessage(message);
+      bridge?.sendFollowUpMessage?.({ text: message });
+    } finally {
+      setIsSubmittingBooking(false);
+    }
   }
 
   if (!output.lots.length) {
@@ -146,16 +162,17 @@ function App() {
         <FullscreenLayout
           lots={output.lots}
           selectedLotId={selectedLot.id}
-          onSelectLot={handleSelectLot}
+          onSelectLot={handleFullscreenSelectLot}
           onBook={handleMockBook}
           bookingMessage={bookingMessage}
           campusAddress={output.campus.address}
+          isSubmittingBooking={isSubmittingBooking}
         />
       ) : (
         <ParkingCarousel
           lots={output.lots}
           selectedLotId={selectedLot?.id || output.lots[0].id}
-          onSelectLot={handleSelectLot}
+          onSelectLot={handleFullscreenSelectLot}
           onOpenFullscreen={openFullscreen}
         />
       )}

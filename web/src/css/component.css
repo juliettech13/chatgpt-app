@@ -1,5 +1,10 @@
 :root {
   color-scheme: light;
+  --app-button-color: #a5b3da;
+  --app-button-text: #121f1c;
+  --app-button-neutral-bg: #e5e7eb;
+  --lot-marker-default: #be89b1;
+  --lot-marker-selected: #f7ccd7;
 }
 
 body {

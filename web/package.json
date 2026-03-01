@@ -16,6 +16,10 @@
   "author": "Juliette Chevalier",
   "license": "ISC",
   "dependencies": {
+    "@turf/distance": "^7.3.4",
+    "@turf/helpers": "^7.3.4",
+    "dotenv": "^17.3.1",
+    "mapbox-gl": "^3.19.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

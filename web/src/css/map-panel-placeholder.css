@@ -4,6 +4,12 @@
   background: #08132a;
 }
 
+.map-panel-placeholder .mapboxgl-map,
+.map-panel-placeholder .mapboxgl-canvas {
+  width: 100%;
+  height: 100%;
+}
+
 .map-panel-placeholder__image {
   width: 100%;
   height: 100%;
@@ -11,29 +17,3 @@
   object-fit: cover;
   filter: saturate(0.88) brightness(0.62);
 }
-
-.map-panel-placeholder::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 55% 44%, transparent 0, rgba(6, 13, 29, 0.25) 52%, rgba(6, 13, 29, 0.44) 100%);
-}
-
-.map-panel-placeholder__pin {
-  position: absolute;
-  z-index: 2;
-  border-radius: 999px;
-  background: #8b66ff;
-  color: #fff;
-  padding: 4px 8px;
-  transform: translate(-50%, -50%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  white-space: nowrap;
-  line-height: 1;
-  box-shadow: 0 2px 8px rgba(3, 6, 14, 0.35);
-}
-
-.map-panel-placeholder__pin.is-selected {
-  background: #4f8fff;
-}
-
