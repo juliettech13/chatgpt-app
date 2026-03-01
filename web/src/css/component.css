@@ -1,0 +1,15 @@
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  padding: 8px;
+  background: transparent;
+  min-height: 0;
+  font: inherit;
+  color: #1d2735;
+}

@@ -1,0 +1,173 @@
+.parking-carousel-map-shell {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0e1a33;
+  border: 1px solid #2a3a57;
+  min-height: 390px;
+}
+
+.parking-carousel__fullscreen-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  border: 1px solid rgba(193, 210, 244, 0.45);
+  background: rgba(14, 25, 50, 0.72);
+  color: #f6f9ff;
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.parking-carousel__fullscreen-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.parking-carousel__fullscreen-btn:hover {
+  border-color: rgba(224, 235, 255, 0.75);
+}
+
+.parking-carousel__map {
+  position: relative;
+  height: 310px;
+}
+
+.parking-carousel__map img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.parking-carousel__map-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(8, 17, 35, 0.3), rgba(8, 17, 35, 0.58) 70%, rgba(8, 17, 35, 0.78));
+}
+
+.parking-carousel__pin {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  background: #8f6dff;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  line-height: 1;
+  font-size: 0.78em;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.parking-carousel__rail {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 6px 4px;
+  scroll-snap-type: x mandatory;
+}
+
+.parking-carousel__card {
+  flex: 0 0 min(320px, 78vw);
+  border: 1px solid #d0d8ea;
+  background: #fff;
+  border-radius: 14px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  box-shadow: 0 8px 20px rgba(11, 22, 45, 0.35);
+  scroll-snap-align: start;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.parking-carousel__card:hover {
+  transform: translateY(-2px);
+}
+
+.parking-carousel__card.is-selected {
+  border-color: #ff8b3d;
+  box-shadow: 0 0 0 2px rgba(255, 139, 61, 0.25);
+}
+
+.parking-carousel__media {
+  height: 112px;
+  position: relative;
+}
+
+.parking-carousel__media--garage {
+  background: radial-gradient(circle at 25% 25%, #3a7bd5, #1e3d73 58%, #15253f);
+}
+
+.parking-carousel__media--surface_lot {
+  background: radial-gradient(circle at 20% 20%, #45b27f, #2a7f5a 58%, #14513b);
+}
+
+.parking-carousel__media-chip {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 700;
+}
+
+.parking-carousel__content {
+  padding: 9px 11px 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.parking-carousel__card-title {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.parking-carousel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #5a6578;
+}
+
+.parking-carousel__description {
+  margin: 0;
+  color: #39465d;
+  line-height: 1.35;
+  min-height: 34px;
+}
+
+.parking-carousel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.parking-carousel__availability {
+  color: #43516a;
+  font-weight: 600;
+}
+
+.parking-carousel__cta {
+  background: #f4853a;
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+
