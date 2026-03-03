@@ -19,8 +19,9 @@ import { createParkingService, loadSeedData } from "./lib/parking-service.js";
 const APP_VERSION = "1.0.0";
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
-const RESOURCE_URI = "ui://parking/parking-browser.v2.html";
+const RESOURCE_URI = "ui://parking/parking-browser.v3.html";
 const PROJECT_ROOT = process.cwd();
+const MIMETYPE = "text/html;profile=mcp-app";
 
 function createServer() {
   const parkingService = createParkingService(loadSeedData(PROJECT_ROOT));
@@ -71,13 +72,13 @@ function buildWidgetHtml() {
     {
       title: "ACME Parking Browser Widget",
       description: "Interactive parking browser for ACME employees.",
-      mimeType: "text/html+skybridge"
+      mimeType: MIMETYPE
     },
     async () => ({
       contents: [
         {
           uri: RESOURCE_URI,
-          mimeType: "text/html+skybridge",
+          mimeType: MIMETYPE,
           text: buildWidgetHtml(),
           _meta: {
             "openai/widgetDescription": "Browse ACME parking options, inspect lot details, and mock-book a spot.",
@@ -128,9 +129,7 @@ server.registerTool(
         date,
         query,
         appliedFilters: interpretedFilters,
-        campus: parkingService.campus,
-        results,
-        parkingResults: lots
+        results
       },
       content: textContent(
         lots.length

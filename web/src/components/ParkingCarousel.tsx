@@ -1,7 +1,6 @@
 import React from "react";
 
 import type { ParkingLot } from "../types";
-import { MapPanel } from "./MapPanel";
 import { ParkingLotCard } from "./ParkingLotCard";
 
 import "../css/parking-carousel.css";
@@ -9,22 +8,12 @@ import "../css/parking-carousel.css";
 type Props = {
   lots: ParkingLot[];
   selectedLotId: string;
-  onSelectLot: (lotId: string) => void;
   onOpenFullscreen: (lotId: string) => void;
 };
 
-export function ParkingCarousel({
-  lots,
-  selectedLotId,
-  onSelectLot,
-  onOpenFullscreen
-}: Props) {
-  function handleMarkerActivate(lotId: string) {
-    onOpenFullscreen(lotId);
-  }
-
+export function ParkingCarousel({ lots, selectedLotId, onOpenFullscreen }: Props) {
   return (
-    <section className="parking-carousel-map-shell">
+    <section className="parking-carousel-overlay">
       <button
         type="button"
         className="parking-carousel__fullscreen-btn"
@@ -44,13 +33,6 @@ export function ParkingCarousel({
         </svg>
       </button>
 
-      <MapPanel
-        lots={lots}
-        selectedLotId={selectedLotId}
-        onMarkerActivate={handleMarkerActivate}
-        className="parking-carousel__map"
-      />
-
       <div className="parking-carousel__rail" role="list">
         {lots.map((lot) => {
           const selected = selectedLotId === lot.id;
@@ -61,7 +43,6 @@ export function ParkingCarousel({
               selected={selected}
               variant="carousel"
               onClick={() => {
-                onSelectLot(lot.id);
                 onOpenFullscreen(lot.id);
               }}
             />

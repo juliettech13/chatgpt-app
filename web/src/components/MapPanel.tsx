@@ -6,12 +6,12 @@ import type { FeatureCollection, Point } from "geojson";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "../css/map-panel-placeholder.css";
 
-import type { ParkingLot } from "../types";
+import type { DisplayMode, ParkingLot } from "../types";
 
 type Props = {
   lots: ParkingLot[];
   selectedLotId: string;
-  onSelectLot?: (lotId: string) => void;
+  mode: DisplayMode;
   onMarkerActivate?: (lotId: string) => void;
   className?: string;
 };
@@ -50,27 +50,29 @@ function toLotsFeatureCollection(lots: ParkingLot[], selectedLotId: string): Fea
 export function MapPanel({
   lots,
   selectedLotId,
-  onSelectLot,
+  mode,
   onMarkerActivate,
   className
 }: Props) {
   const containerRef = useRef(null as HTMLDivElement | null);
   const mapRef = useRef(null as mapboxgl.Map | null);
   const hasInitialViewportRef = useRef(false);
+  const hasSelectionCameraInitRef = useRef(false);
+  const previousSelectedLotIdRef = useRef(null);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
-  const callbacksRef = useRef({ onSelectLot, onMarkerActivate });
+  const callbacksRef = useRef({ onMarkerActivate });
   const token = window.__MAPBOX_PUBLIC_TOKEN__ || "";
   const hasToken = Boolean(token);
 
   useEffect(() => {
-    callbacksRef.current = { onSelectLot, onMarkerActivate };
-  }, [onSelectLot, onMarkerActivate]);
+    callbacksRef.current = { onMarkerActivate };
+  }, [onMarkerActivate]);
 
   useEffect(() => {
     if (!hasToken || !containerRef.current || mapRef.current) return;
 
     const markerDefaultColor = getCssVariable("--lot-marker-default", "#be89b1");
-    const markerSelectedColor = getCssVariable("--lot-marker-selected", "#f7c742");
+    const markerSelectedColor = getCssVariable("--lot-marker-selected", "#f7ccd7");
 
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
@@ -134,7 +136,6 @@ export function MapPanel({
         const lotId: string | undefined = features[0]?.properties?.lotId;
         if (!lotId) return;
 
-        callbacksRef.current.onSelectLot?.(lotId);
         callbacksRef.current.onMarkerActivate?.(lotId);
       };
 
@@ -153,8 +154,16 @@ export function MapPanel({
       mapRef.current = null;
       setIsStyleLoaded(false);
       hasInitialViewportRef.current = false;
+      hasSelectionCameraInitRef.current = false;
+      previousSelectedLotIdRef.current = null;
     };
   }, [hasToken, token]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!hasToken || !map || !isStyleLoaded) return;
+    map.resize();
+  }, [hasToken, isStyleLoaded, mode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -183,6 +192,19 @@ export function MapPanel({
 
     const selectedLot = lots.find((lot) => lot.id === selectedLotId);
     if (!selectedLot) return;
+
+    if (!hasInitialViewportRef.current) return;
+
+    if (!hasSelectionCameraInitRef.current) {
+      hasSelectionCameraInitRef.current = true;
+      previousSelectedLotIdRef.current = selectedLotId;
+      return;
+    }
+
+    if (previousSelectedLotIdRef.current === selectedLotId) {
+      return;
+    }
+    previousSelectedLotIdRef.current = selectedLotId;
 
     map.easeTo({
       center: [selectedLot.location.lng, selectedLot.location.lat],

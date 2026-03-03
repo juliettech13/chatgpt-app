@@ -162,7 +162,7 @@ export function createParkingService(seedData) {
 
   function toSearchResults(lots) {
     return lots.map((lot) => ({
-      id: lot.id,
+      ...lot,
       title: `${lot.name} (${lot.availableSpots} spots available)`,
       url: lotCanonicalUrl(lot.id, lot.date)
     }));
