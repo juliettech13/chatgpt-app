@@ -1,59 +1,48 @@
-.fullscreen-layout {
-  position: relative;
-  min-height: min(78vh, 760px);
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  background: Canvas;
-  color: CanvasText;
-}
-
-.fullscreen-layout > .map-panel-placeholder {
+.fullscreen-overlay {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 
-.fullscreen-layout > .lot-options-panel {
+.fullscreen-overlay > .lot-options-panel {
   position: absolute;
   left: 10px;
   top: 10px;
   bottom: 10px;
   width: min(320px, 34vw);
   z-index: 4;
+  pointer-events: auto;
 }
 
-.fullscreen-layout > .lot-inspector-panel {
+.fullscreen-overlay > .lot-inspector-panel {
   position: absolute;
   right: 10px;
   top: 10px;
   bottom: 10px;
   width: min(380px, 38vw);
   z-index: 5;
+  pointer-events: auto;
 }
 
 @media (max-width: 1024px) {
-  .fullscreen-layout {
-    min-height: min(88vh, 920px);
-  }
-
-  .fullscreen-layout > .lot-options-panel {
+  .fullscreen-overlay > .lot-options-panel {
     width: min(300px, 46vw);
   }
 
-  .fullscreen-layout > .lot-inspector-panel {
+  .fullscreen-overlay > .lot-inspector-panel {
     width: min(340px, 52vw);
   }
 }
 
 @media (max-width: 760px) {
-  .fullscreen-layout > .lot-options-panel {
+  .fullscreen-overlay > .lot-options-panel {
     width: calc(100% - 20px);
     max-height: 42%;
     bottom: auto;
     height: auto;
   }
 
-  .fullscreen-layout > .lot-inspector-panel {
+  .fullscreen-overlay > .lot-inspector-panel {
     width: calc(100% - 20px);
     left: 10px;
     right: 10px;
@@ -61,4 +50,3 @@
     height: 52%;
   }
 }
-

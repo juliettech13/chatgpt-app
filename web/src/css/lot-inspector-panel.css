@@ -16,20 +16,23 @@
 }
 
 .lot-inspector-panel__close-btn {
-  border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+  border: 1px solid var(--app-button-color);
   width: 28px;
   height: 28px;
   border-radius: 999px;
   display: inline-grid;
   place-items: center;
-  background: color-mix(in srgb, Canvas 94%, transparent);
-  color: CanvasText;
+  background: var(--app-button-neutral-bg);
+  color: var(--app-button-text);
+  line-height: 1;
   cursor: pointer;
+  transition: filter 0.12s ease, opacity 0.12s ease;
 }
 
 .lot-inspector-panel__close-btn svg {
   width: 16px;
   height: 16px;
+  display: block;
 }
 
 .lot-inspector-panel__media {
@@ -100,14 +103,26 @@
 }
 
 .lot-inspector-panel__book-btn {
-  border: 1px solid #3561d8;
+  border: 1px solid var(--app-button-color);
   border-radius: 999px;
-  background: #3561d8;
-  color: #fff;
+  background: var(--app-button-color);
+  color: var(--app-button-text);
   padding: 8px 12px;
   cursor: pointer;
   font: inherit;
   font-weight: 600;
+  transition: filter 0.12s ease, opacity 0.12s ease;
+}
+
+.lot-inspector-panel__close-btn:hover:not(:disabled),
+.lot-inspector-panel__book-btn:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.lot-inspector-panel__close-btn:disabled,
+.lot-inspector-panel__book-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .lot-inspector-panel__message {
@@ -117,4 +132,3 @@
   border-radius: 8px;
   padding: 8px;
 }
-

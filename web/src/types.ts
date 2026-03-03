@@ -30,17 +30,30 @@ export type Campus = {
 export type ToolOutput = {
   date: string;
   query: string;
-  campus: Campus;
-  lots: ParkingLot[];
+  results: SearchResult[];
   policy?: {
     hold_ttl_minutes: number;
     max_booking_days_ahead: number;
   };
 };
 
-export type WidgetState = {
-  selectedLotId?: string;
-  selectedDate?: string;
-  displayMode?: "inline" | "fullscreen";
+export type SearchResult = ParkingLot & {
+  title: string;
+  url: string;
 };
 
+export type SearchStructuredContent = {
+  date: string;
+  query: string;
+  results: SearchResult[];
+};
+
+export type ToolOutputSnapshot = {
+  structuredContent?: Partial<SearchStructuredContent>;
+};
+
+export type WidgetState = {
+  selectedLotId?: string;
+};
+
+export type DisplayMode = "inline" | "fullscreen";

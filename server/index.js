@@ -1,8 +1,11 @@
+import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+
 import {
   alternativesInputSchema,
   bookInputSchema,
@@ -10,16 +13,15 @@ import {
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
+import { parseLotFiltersWithSampling } from "./lib/filter-parser.js";
 import { createParkingService, loadSeedData } from "./lib/parking-service.js";
 
 const APP_VERSION = "1.0.0";
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
-const RESOURCE_URI = "ui://parking/parking-browser.v1.html";
+const RESOURCE_URI = "ui://parking/parking-browser.v3.html";
 const PROJECT_ROOT = process.cwd();
-const allowedHostsFromEnv = process.env.ALLOWED_HOSTS
-  ? process.env.ALLOWED_HOSTS.split(",").map((host) => host.trim()).filter(Boolean)
-  : undefined;
+const MIMETYPE = "text/html;profile=mcp-app";
 
 function createServer() {
   const parkingService = createParkingService(loadSeedData(PROJECT_ROOT));
@@ -47,6 +49,7 @@ function readWidgetStyles() {
 function buildWidgetHtml() {
   const widgetJs = readWidgetBundle();
   const widgetCss = readWidgetStyles();
+  const mapboxPublicToken = (process.env.MAPBOX_PUBLIC_TOKEN || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   return `<!doctype html>
     <html lang="en">
       <head>
@@ -57,6 +60,7 @@ function buildWidgetHtml() {
       </head>
       <body>
         <div id="root"></div>
+        <script>window.__MAPBOX_PUBLIC_TOKEN__="${mapboxPublicToken}";</script>
         <script type="module">${widgetJs}</script>
       </body>
     </html>`;
@@ -68,20 +72,20 @@ function buildWidgetHtml() {
     {
       title: "ACME Parking Browser Widget",
       description: "Interactive parking browser for ACME employees.",
-      mimeType: "text/html+skybridge"
+      mimeType: MIMETYPE
     },
     async () => ({
       contents: [
         {
           uri: RESOURCE_URI,
-          mimeType: "text/html+skybridge",
+          mimeType: MIMETYPE,
           text: buildWidgetHtml(),
           _meta: {
             "openai/widgetDescription": "Browse ACME parking options, inspect lot details, and mock-book a spot.",
             "openai/widgetDomain": "https://acme-parking.example.com",
             "openai/widgetCSP": {
-              connect_domains: [],
-              resource_domains: [],
+              connect_domains: ["https://api.mapbox.com", "https://events.mapbox.com"],
+              resource_domains: ["https://api.mapbox.com"],
               frame_domains: []
             }
           }
@@ -95,7 +99,7 @@ server.registerTool(
   {
     title: "Search parking availability",
     description:
-      "Search ACME parking lots for a user request. Defaults to today if no date is given and renders the parking widget directly from this tool.",
+      "Search ACME parking lots for a user request. Prefer passing canonical filters when possible. This tool defaults to today and renders the widget from this call.",
     inputSchema: searchInputSchema,
     annotations: {
       readOnlyHint: true,
@@ -110,8 +114,9 @@ server.registerTool(
       "openai/toolInvocation/invoked": "Loaded parking options"
     }
   },
-  async ({ query }) => {
-    const { date, lots } = parkingService.getLotsForDate();
+  async ({ query, filters }, extra) => {
+    const interpretedFilters = filters || (await parseLotFiltersWithSampling(query, extra));
+    const { date, lots } = parkingService.searchLots(interpretedFilters);
     const results = parkingService.toSearchResults(lots);
     const totalAvailable = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
     const nearest = lots
@@ -123,16 +128,17 @@ server.registerTool(
       structuredContent: {
         date,
         query,
-        campus: parkingService.campus,
-        results,
-        parkingResults: lots
+        appliedFilters: interpretedFilters,
+        results
       },
       content: textContent(
-        [
-          `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailable} total spots currently available.`,
-          nearest ? `Closest options include ${nearest}.` : "",
-          "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further."
-        ].join("\n")
+        lots.length
+          ? [
+              `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailable} total spots currently available.`,
+              nearest ? `Closest options include ${nearest}.` : "",
+              "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further."
+            ].join("\n")
+          : `No parking lots matched "${query}" for ${date}. Try broadening your filter (for example, lower the minimum spots or remove one attribute constraint).`
       )
     };
   }
@@ -243,8 +249,7 @@ server.registerTool(
 }
 
 const app = createMcpExpressApp({
-  host: HOST,
-  allowedHosts: allowedHostsFromEnv
+  host: HOST
 });
 
 app.post("/mcp", async (req, res) => {

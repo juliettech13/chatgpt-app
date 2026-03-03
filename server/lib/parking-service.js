@@ -1,20 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+
+import distance from "@turf/distance";
+import { point } from "@turf/helpers";
+
 import { lotCanonicalUrl } from "./urls.js";
 
-function toRadians(value) {
-  return (value * Math.PI) / 180;
-}
-
 function haversineMeters(from, to) {
-  const earthRadiusMeters = 6371000;
-  const deltaLat = toRadians(to.lat - from.lat);
-  const deltaLng = toRadians(to.lng - from.lng);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(deltaLng / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(earthRadiusMeters * c);
+  const fromPt = point([from.lng, from.lat]);
+  const toPt = point([to.lng, to.lat]);
+  const km = distance(fromPt, toPt, { units: "kilometers" });
+  return Math.round(km * 1000);
 }
 
 function formatTodayInTimezone(timezone) {
@@ -25,6 +21,13 @@ function formatTodayInTimezone(timezone) {
     day: "2-digit"
   });
   return formatter.format(new Date());
+}
+
+function capitalize(type) {
+  return type
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function loadSeedData(projectRoot) {
@@ -79,6 +82,56 @@ export function createParkingService(seedData) {
     return { date, lots };
   }
 
+  function applyFilters(lots, filters = {}) {
+    let filtered = [...lots];
+
+    if (typeof filters.minSpots === "number") {
+      filtered = filtered.filter((lot) => lot.availableSpots >= filters.minSpots);
+    }
+    if (typeof filters.maxSpots === "number") {
+      filtered = filtered.filter((lot) => lot.availableSpots <= filters.maxSpots);
+    }
+    if (filters.requireCovered) {
+      filtered = filtered.filter((lot) => lot.attributes.covered);
+    }
+    if (filters.excludeCovered) {
+      filtered = filtered.filter((lot) => !lot.attributes.covered);
+    }
+    if (filters.requireAccessible) {
+      filtered = filtered.filter((lot) => lot.attributes.accessible);
+    }
+    if (filters.excludeAccessible) {
+      filtered = filtered.filter((lot) => !lot.attributes.accessible);
+    }
+    if (filters.requireEv) {
+      filtered = filtered.filter((lot) => lot.attributes.ev_charging);
+    }
+    if (filters.excludeEv) {
+      filtered = filtered.filter((lot) => !lot.attributes.ev_charging);
+    }
+    if (Array.isArray(filters.typeIn) && filters.typeIn.length) {
+      filtered = filtered.filter((lot) => filters.typeIn.includes(lot.type));
+    }
+    if (typeof filters.maxDistanceMiles === "number") {
+      filtered = filtered.filter((lot) => lot.distanceToHQMiles <= filters.maxDistanceMiles);
+    }
+
+    if (filters.sortBy === "most_spots") {
+      filtered.sort((a, b) => b.availableSpots - a.availableSpots || a.distanceToHQMeters - b.distanceToHQMeters);
+    } else {
+      filtered.sort((a, b) => a.distanceToHQMeters - b.distanceToHQMeters);
+    }
+
+    return filtered;
+  }
+
+  function searchLots(filters) {
+    const dateInput = filters?.date;
+    const { date, lots } = getLotsForDate(dateInput);
+    const filteredLots = applyFilters(lots, filters || {});
+    return { date, lots: filteredLots };
+  }
+
   function getLotById(id, dateInput) {
     const date = resolveDateOrToday(dateInput);
     const lot = lotById.get(id);
@@ -109,17 +162,18 @@ export function createParkingService(seedData) {
 
   function toSearchResults(lots) {
     return lots.map((lot) => ({
-      id: lot.id,
+      ...lot,
       title: `${lot.name} (${lot.availableSpots} spots available)`,
       url: lotCanonicalUrl(lot.id, lot.date)
     }));
   }
 
   function toFetchDocument(lot) {
+    const lotType = capitalize(lot.type);
     return {
       id: lot.id,
       title: lot.name,
-      text: `${lot.name} is a ${lot.type} ${lot.distanceToHQMiles} miles from HQ. ${lot.availableSpots}/${lot.capacity} spots are available.`,
+      text: `${lot.name} is a ${lotType} ${lot.distanceToHQMiles} miles from HQ. ${lot.availableSpots}/${lot.capacity} spots are available.`,
       url: lotCanonicalUrl(lot.id, lot.date),
       metadata: {
         type: lot.type,
@@ -139,10 +193,11 @@ export function createParkingService(seedData) {
     policy: seedData.policy,
     resolveDateOrToday,
     getLotsForDate,
+    applyFilters,
+    searchLots,
     getLotById,
     getNearestAlternatives,
     toSearchResults,
     toFetchDocument
   };
 }
-
