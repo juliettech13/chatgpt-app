@@ -23,8 +23,8 @@ function formatTodayInTimezone(timezone) {
   return formatter.format(new Date());
 }
 
-function capitalize(type) {
-  return type
+function capitalize(word) {
+  return word
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
@@ -37,7 +37,7 @@ export function loadSeedData(projectRoot) {
 }
 
 export function createParkingService(seedData) {
-  const lotById = new Map(seedData.lots.map((lot) => [lot.id, lot]));
+  const lotsById = new Map(seedData.lots.map((lot) => [lot.id, lot]));
   const inventoryByDate = new Map();
 
   for (const entry of seedData.daily_inventory) {
@@ -134,7 +134,7 @@ export function createParkingService(seedData) {
 
   function getLotById(id, dateInput) {
     const date = resolveDateOrToday(dateInput);
-    const lot = lotById.get(id);
+    const lot = lotsById.get(id);
     if (!lot) {
       return null;
     }

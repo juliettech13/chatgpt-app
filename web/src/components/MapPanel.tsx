@@ -8,7 +8,7 @@ import "../css/map-panel-placeholder.css";
 
 import type { DisplayMode, ParkingLot } from "../types";
 
-type Props = {
+type MapPanelProps = {
   lots: ParkingLot[];
   selectedLotId: string;
   mode: DisplayMode;
@@ -24,12 +24,15 @@ declare global {
 
 type LotFeatureProperties = { lotId: string; spotsLabel: string; selected: boolean };
 
-function getCssVariable(name: string, fallback: string) {
+function readCssCustomProperty(name: string, fallback: string) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return value || fallback;
 }
 
-function toLotsFeatureCollection(lots: ParkingLot[], selectedLotId: string): FeatureCollection<Point, LotFeatureProperties> {
+function buildLotsGeoJsonFeatureCollection(
+  lots: ParkingLot[],
+  selectedLotId: string
+): FeatureCollection<Point, LotFeatureProperties> {
   return {
     type: "FeatureCollection",
     features: lots.map((lot) => ({
@@ -53,28 +56,28 @@ export function MapPanel({
   mode,
   onMarkerActivate,
   className
-}: Props) {
+}: MapPanelProps) {
   const containerRef = useRef(null as HTMLDivElement | null);
   const mapRef = useRef(null as mapboxgl.Map | null);
   const hasInitialViewportRef = useRef(false);
   const hasSelectionCameraInitRef = useRef(false);
   const previousSelectedLotIdRef = useRef(null);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
-  const callbacksRef = useRef({ onMarkerActivate });
-  const token = window.__MAPBOX_PUBLIC_TOKEN__ || "";
-  const hasToken = Boolean(token);
+  const markerCallbacksRef = useRef({ onMarkerActivate });
+  const mapboxPublicToken = window.__MAPBOX_PUBLIC_TOKEN__ || "";
+  const hasMapboxPublicToken = Boolean(mapboxPublicToken);
 
   useEffect(() => {
-    callbacksRef.current = { onMarkerActivate };
+    markerCallbacksRef.current = { onMarkerActivate };
   }, [onMarkerActivate]);
 
   useEffect(() => {
-    if (!hasToken || !containerRef.current || mapRef.current) return;
+    if (!hasMapboxPublicToken || !containerRef.current || mapRef.current) return;
 
-    const markerDefaultColor = getCssVariable("--lot-marker-default", "#be89b1");
-    const markerSelectedColor = getCssVariable("--lot-marker-selected", "#f7ccd7");
+    const markerDefaultColor = readCssCustomProperty("--lot-marker-default", "#be89b1");
+    const markerSelectedColor = readCssCustomProperty("--lot-marker-selected", "#f7ccd7");
 
-    mapboxgl.accessToken = token;
+    mapboxgl.accessToken = mapboxPublicToken;
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/standard",
@@ -128,7 +131,7 @@ export function MapPanel({
         }
       });
 
-      const onLotClick = (event: mapboxgl.MapMouseEvent) => {
+      const handleMapLotClick = (event: mapboxgl.MapMouseEvent) => {
         const features = map.queryRenderedFeatures(event.point, {
           layers: ["parking-lots-circle", "parking-lots-label"]
         });
@@ -136,11 +139,11 @@ export function MapPanel({
         const lotId: string | undefined = features[0]?.properties?.lotId;
         if (!lotId) return;
 
-        callbacksRef.current.onMarkerActivate?.(lotId);
+        markerCallbacksRef.current.onMarkerActivate?.(lotId);
       };
 
-      map.on("click", "parking-lots-circle", onLotClick);
-      map.on("click", "parking-lots-label", onLotClick);
+      map.on("click", "parking-lots-circle", handleMapLotClick);
+      map.on("click", "parking-lots-label", handleMapLotClick);
       map.on("mouseenter", "parking-lots-circle", () => {
         map.getCanvas().style.cursor = "pointer";
       });
@@ -157,22 +160,22 @@ export function MapPanel({
       hasSelectionCameraInitRef.current = false;
       previousSelectedLotIdRef.current = null;
     };
-  }, [hasToken, token]);
+  }, [hasMapboxPublicToken, mapboxPublicToken]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!hasToken || !map || !isStyleLoaded) return;
+    if (!hasMapboxPublicToken || !map || !isStyleLoaded) return;
     map.resize();
-  }, [hasToken, isStyleLoaded, mode]);
+  }, [hasMapboxPublicToken, isStyleLoaded, mode]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!hasToken || !map || !isStyleLoaded) return;
+    if (!hasMapboxPublicToken || !map || !isStyleLoaded) return;
 
     const lotsSource = map.getSource("parking-lots") as mapboxgl.GeoJSONSource | undefined;
     if (!lotsSource) return;
 
-    lotsSource.setData(toLotsFeatureCollection(lots, selectedLotId));
+    lotsSource.setData(buildLotsGeoJsonFeatureCollection(lots, selectedLotId));
 
     if (!hasInitialViewportRef.current && lots.length) {
       if (lots.length === 1) {
@@ -184,11 +187,11 @@ export function MapPanel({
       }
       hasInitialViewportRef.current = true;
     }
-  }, [hasToken, isStyleLoaded, lots, selectedLotId]);
+  }, [hasMapboxPublicToken, isStyleLoaded, lots, selectedLotId]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!hasToken || !map || !selectedLotId) return;
+    if (!hasMapboxPublicToken || !map || !selectedLotId) return;
 
     const selectedLot = lots.find((lot) => lot.id === selectedLotId);
     if (!selectedLot) return;
@@ -210,9 +213,9 @@ export function MapPanel({
       center: [selectedLot.location.lng, selectedLot.location.lat],
       duration: 500
     });
-  }, [hasToken, lots, selectedLotId]);
+  }, [hasMapboxPublicToken, lots, selectedLotId]);
 
-  if (!hasToken) {
+  if (!hasMapboxPublicToken) {
     return (
       <section className={`map-panel-placeholder ${className || ""}`.trim()} aria-label="Map panel fallback">
         <img

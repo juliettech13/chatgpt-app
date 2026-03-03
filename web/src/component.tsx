@@ -11,10 +11,13 @@ import "./css/parking-lot-card.css";
 
 const DEFAULT_CAMPUS_ADDRESS = "123 Market St, San Francisco, CA";
 
-type OpenAIBridge = {
+type OpenAiGlobals = {
   displayMode?: DisplayMode;
   toolOutput?: { structuredContent?: Partial<SearchStructuredContent> } | Partial<SearchStructuredContent>;
   widgetState?: WidgetState;
+};
+
+type OpenAIApi = {
   requestDisplayMode?: (params: { mode: DisplayMode }) => Promise<{ mode: DisplayMode }>;
   setWidgetState?: (state: WidgetState & Record<string, unknown>) => void;
   callTool?: (name: string, args: Record<string, unknown>) => Promise<{
@@ -27,11 +30,11 @@ type OpenAIBridge = {
 
 declare global {
   interface Window {
-    openai?: OpenAIBridge;
+    openai?: OpenAiGlobals & OpenAIApi;
   }
 }
 
-function toStructuredContent(
+function extractStructuredContentFromHost(
   value: { structuredContent?: Partial<SearchStructuredContent> } | Partial<SearchStructuredContent> | undefined
 ): Partial<SearchStructuredContent> | undefined {
   if (!value || typeof value !== "object") return undefined;
@@ -41,7 +44,7 @@ function toStructuredContent(
   return value as Partial<SearchStructuredContent>;
 }
 
-function normalizeOutput(structuredContent?: Partial<SearchStructuredContent>) {
+function normalizeSearchResults(structuredContent?: Partial<SearchStructuredContent>) {
   const results = Array.isArray(structuredContent?.results) ? structuredContent.results : [];
 
   return {
@@ -52,31 +55,31 @@ function normalizeOutput(structuredContent?: Partial<SearchStructuredContent>) {
 }
 
 function App() {
-  const [output, setOutput] = useState(() => normalizeOutput());
+  const [searchResults, setSearchResults] = useState(() => normalizeSearchResults());
   const [selectedLotId, setSelectedLotId] = useState("");
   const [displayMode, setDisplayMode] = useState("inline" as DisplayMode);
   const [bookingMessage, setBookingMessage] = useState(null as string | null);
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isInspectorOpen, setInspectorOpen] = useState(true);
-  const hasAppliedHostOutputRef = useRef(false);
-  const lastOutputSignatureRef = useRef("");
+  const hasAppliedRef = useRef(false);
+  const lastSignatureRef = useRef("");
 
   useEffect(() => {
-    function getOutputSignature(content: Partial<SearchStructuredContent>) {
+    function getResultsSignature(content: Partial<SearchStructuredContent>) {
       const ids = Array.isArray(content.results) ? content.results.map((result) => result.id).join(",") : "";
       return `${content.date || ""}|${ids}`;
     }
 
-    function applyOutput(content: Partial<SearchStructuredContent> | undefined, mode: "initialize" | "tool-result") {
+    function applyResults(content: Partial<SearchStructuredContent> | undefined, mode: "initialize" | "tool-result") {
       if (!content || !Array.isArray(content.results)) return;
 
-      const next = normalizeOutput(content);
-      const signature = getOutputSignature(next);
-      if (signature === lastOutputSignatureRef.current) return;
+      const next = normalizeSearchResults(content);
+      const signature = getResultsSignature(next);
+      if (signature === lastSignatureRef.current) return;
 
-      lastOutputSignatureRef.current = signature;
-      setOutput(next);
-      if (mode === "initialize" && !hasAppliedHostOutputRef.current) {
+      lastSignatureRef.current = signature;
+      setSearchResults(next);
+      if (mode === "initialize" && !hasAppliedRef.current) {
         const preferredLotId = window.openai?.widgetState?.selectedLotId;
         if (preferredLotId && next.results.some((lot) => lot.id === preferredLotId)) {
           setSelectedLotId(preferredLotId);
@@ -86,12 +89,12 @@ function App() {
       } else {
         setSelectedLotId(next.results[0]?.id ?? "");
       }
-      hasAppliedHostOutputRef.current = true;
+      hasAppliedRef.current = true;
     }
 
-    function hydrateFromHost(mode: "initialize" | "tool-result") {
-      const hostOutput = toStructuredContent(window.openai?.toolOutput);
-      applyOutput(hostOutput, mode);
+    function syncFromHost(mode: "initialize" | "tool-result") {
+      const hostOutput = extractStructuredContentFromHost(window.openai?.toolOutput);
+      applyResults(hostOutput, mode);
     }
 
     const hostMode = window.openai?.displayMode;
@@ -99,14 +102,14 @@ function App() {
       setDisplayMode(hostMode);
     }
 
-    hydrateFromHost("initialize");
+    syncFromHost("initialize");
 
     function onSetGlobals() {
       const nextMode = window.openai?.displayMode;
       if (nextMode === "inline" || nextMode === "fullscreen") {
         setDisplayMode(nextMode);
       }
-      hydrateFromHost(hasAppliedHostOutputRef.current ? "tool-result" : "initialize");
+      syncFromHost(hasAppliedRef.current ? "tool-result" : "initialize");
     }
 
     window.addEventListener("openai:set_globals", onSetGlobals, { passive: true });
@@ -116,11 +119,11 @@ function App() {
     };
   }, []);
 
-  const selectedLot = output.results.find((lot) => lot.id === selectedLotId) || output.results[0];
+  const selectedLot = searchResults.results.find((lot) => lot.id === selectedLotId) || searchResults.results[0];
   const isFullscreen = displayMode === "fullscreen" && Boolean(selectedLot);
 
   function syncContext(nextLotId: string) {
-    const lot = output.results.find((item) => item.id === nextLotId);
+    const lot = searchResults.results.find((item) => item.id === nextLotId);
     if (!lot) return;
 
     window.openai?.setWidgetState?.({
@@ -128,7 +131,7 @@ function App() {
     });
     window.openai?.updateModelContext?.({
       selectedLotId: nextLotId,
-      selectedDate: output.date,
+      selectedDate: searchResults.date,
       selectedLot: {
         id: lot.id,
         name: lot.name,
@@ -177,11 +180,11 @@ function App() {
     try {
       const response = await window.openai.callTool("book_parking", {
         lotId: lot.id,
-        date: output.date
+        date: searchResults.date
       });
       const message =
         response?.content?.find((item) => item.type === "text")?.text ||
-        `Mock booking confirmed for ${lot.name} on ${output.date}.`;
+        `Mock booking confirmed for ${lot.name} on ${searchResults.date}.`;
       setBookingMessage(message);
       window.openai?.sendFollowUpMessage?.({ text: message });
     } finally {
@@ -195,7 +198,7 @@ function App() {
     <main className="app-shell">
       <section className={`app-view ${isFullscreen ? "app-view--fullscreen" : "app-view--inline"}`}>
         <MapPanel
-          lots={output.results}
+          lots={searchResults.results}
           selectedLotId={activeLotId}
           mode={isFullscreen ? "fullscreen" : "inline"}
           onMarkerActivate={handleMapMarkerActivate}
@@ -204,7 +207,7 @@ function App() {
 
         {isFullscreen && selectedLot ? (
           <FullscreenLayout
-            lots={output.results}
+            lots={searchResults.results}
             selectedLotId={selectedLot.id}
             onSelectLot={handleFullscreenSelectLot}
             onBook={handleMockBook}
@@ -214,9 +217,9 @@ function App() {
             isInspectorOpen={isInspectorOpen}
             onCloseInspector={() => setInspectorOpen(false)}
           />
-        ) : output.results.length ? (
+        ) : searchResults.results.length ? (
           <ParkingCarousel
-            lots={output.results}
+            lots={searchResults.results}
             selectedLotId={activeLotId}
             onOpenFullscreen={openFullscreen}
           />

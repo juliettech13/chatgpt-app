@@ -4,7 +4,7 @@ import type { ParkingLot } from "../types";
 
 import "../css/parking-lot-card.css";
 
-type Props = {
+type ParkingLotCardProps = {
   key: string;
   lot: ParkingLot;
   selected: boolean;
@@ -13,7 +13,13 @@ type Props = {
   variant?: "carousel" | "panel";
 };
 
-export function ParkingLotCard({ lot, selected, onClick, disabled = false, variant = "panel" }: Props) {
+export function ParkingLotCard({
+  lot,
+  selected,
+  onClick,
+  disabled = false,
+  variant = "panel"
+}: ParkingLotCardProps) {
   return (
     <button
       type="button"

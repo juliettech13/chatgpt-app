@@ -6,7 +6,7 @@ import { LotOptionsPanel } from "./LotOptionsPanel";
 
 import "../css/fullscreen-layout.css";
 
-type Props = {
+type FullscreenLayoutProps = {
   lots: ParkingLot[];
   selectedLotId: string;
   onSelectLot: (lotId: string) => void;
@@ -28,7 +28,7 @@ export function FullscreenLayout({
   isSubmittingBooking,
   isInspectorOpen,
   onCloseInspector
-}: Props) {
+}: FullscreenLayoutProps) {
   const selectedLot = lots.find((lot) => lot.id === selectedLotId) || lots[0];
 
   return (
