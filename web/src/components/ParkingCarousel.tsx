@@ -5,13 +5,13 @@ import { ParkingLotCard } from "./ParkingLotCard";
 
 import "../css/parking-carousel.css";
 
-type Props = {
+type ParkingCarouselProps = {
   lots: ParkingLot[];
   selectedLotId: string;
   onOpenFullscreen: (lotId: string) => void;
 };
 
-export function ParkingCarousel({ lots, selectedLotId, onOpenFullscreen }: Props) {
+export function ParkingCarousel({ lots, selectedLotId, onOpenFullscreen }: ParkingCarouselProps) {
   return (
     <section className="parking-carousel-overlay">
       <button

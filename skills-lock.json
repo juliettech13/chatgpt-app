@@ -46,6 +46,11 @@
       "sourceType": "github",
       "computedHash": "70bc273dcb90ed035be512862b658d1bd80daa135e24d346c7111f1830f934c5"
     },
+    "naming-analyzer": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "computedHash": "bf61ae4fe1e1fa8710d0cddce471b0a271219f3a3bd8b6286f62def6b4f8b366"
+    },
     "react-useeffect": {
       "source": "softaworks/agent-toolkit",
       "sourceType": "github",

@@ -5,7 +5,7 @@ import { capitalize } from "../lib/format";
 
 import "../css/lot-inspector-panel.css";
 
-type Props = {
+type LotInspectorPanelProps = {
   lot: ParkingLot;
   onBook: (lot: ParkingLot) => void;
   bookingMessage: string | null;
@@ -14,7 +14,14 @@ type Props = {
   isSubmittingBooking: boolean;
 };
 
-export function LotInspectorPanel({ lot, onBook, bookingMessage, address, onClose, isSubmittingBooking }: Props) {
+export function LotInspectorPanel({
+  lot,
+  onBook,
+  bookingMessage,
+  address,
+  onClose,
+  isSubmittingBooking
+}: LotInspectorPanelProps) {
   const mediaClass = lot.type === "garage" ? "lot-inspector-panel__media--garage" : "lot-inspector-panel__media--surface";
 
   return (

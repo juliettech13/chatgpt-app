@@ -5,13 +5,13 @@ import { ParkingLotCard } from "./ParkingLotCard";
 
 import "../css/lot-options-panel.css";
 
-type Props = {
+type LotOptionsPanelProps = {
   lots: ParkingLot[];
   selectedLotId: string;
   onSelectLot: (lotId: string) => void;
 };
 
-export function LotOptionsPanel({ lots, selectedLotId, onSelectLot }: Props) {
+export function LotOptionsPanel({ lots, selectedLotId, onSelectLot }: LotOptionsPanelProps) {
   return (
     <aside className="lot-options-panel" aria-label="Parking options panel">
       <div className="lot-options-panel__rail">
