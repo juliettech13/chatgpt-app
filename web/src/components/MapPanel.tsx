@@ -10,7 +10,7 @@ import type { DisplayMode, ParkingLot } from "../types";
 
 type MapPanelProps = {
   lots: ParkingLot[];
-  selectedLotId: string;
+  activeLotId: string;
   mode: DisplayMode;
   onMarkerActivate?: (lotId: string) => void;
   className?: string;
@@ -31,7 +31,7 @@ function readCssCustomProperty(name: string, fallback: string) {
 
 function buildLotsGeoJsonFeatureCollection(
   lots: ParkingLot[],
-  selectedLotId: string
+  activeLotId: string
 ): FeatureCollection<Point, LotFeatureProperties> {
   return {
     type: "FeatureCollection",
@@ -44,7 +44,7 @@ function buildLotsGeoJsonFeatureCollection(
       properties: {
         lotId: lot.id,
         spotsLabel: String(lot.availableSpots),
-        selected: lot.id === selectedLotId
+        selected: lot.id === activeLotId
       }
     }))
   };
@@ -52,7 +52,7 @@ function buildLotsGeoJsonFeatureCollection(
 
 export function MapPanel({
   lots,
-  selectedLotId,
+  activeLotId,
   mode,
   onMarkerActivate,
   className
@@ -175,7 +175,7 @@ export function MapPanel({
     const lotsSource = map.getSource("parking-lots") as mapboxgl.GeoJSONSource | undefined;
     if (!lotsSource) return;
 
-    lotsSource.setData(buildLotsGeoJsonFeatureCollection(lots, selectedLotId));
+    lotsSource.setData(buildLotsGeoJsonFeatureCollection(lots, activeLotId));
 
     if (!hasInitialViewportRef.current && lots.length) {
       if (lots.length === 1) {
@@ -187,33 +187,33 @@ export function MapPanel({
       }
       hasInitialViewportRef.current = true;
     }
-  }, [hasMapboxPublicToken, isStyleLoaded, lots, selectedLotId]);
+  }, [hasMapboxPublicToken, isStyleLoaded, lots, activeLotId]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!hasMapboxPublicToken || !map || !selectedLotId) return;
+    if (!hasMapboxPublicToken || !map || !activeLotId) return;
 
-    const selectedLot = lots.find((lot) => lot.id === selectedLotId);
+    const selectedLot = lots.find((lot) => lot.id === activeLotId);
     if (!selectedLot) return;
 
     if (!hasInitialViewportRef.current) return;
 
     if (!hasSelectionCameraInitRef.current) {
       hasSelectionCameraInitRef.current = true;
-      previousSelectedLotIdRef.current = selectedLotId;
+      previousSelectedLotIdRef.current = activeLotId;
       return;
     }
 
-    if (previousSelectedLotIdRef.current === selectedLotId) {
+    if (previousSelectedLotIdRef.current === activeLotId) {
       return;
     }
-    previousSelectedLotIdRef.current = selectedLotId;
+    previousSelectedLotIdRef.current = activeLotId;
 
     map.easeTo({
       center: [selectedLot.location.lng, selectedLot.location.lat],
       duration: 500
     });
-  }, [hasMapboxPublicToken, lots, selectedLotId]);
+  }, [hasMapboxPublicToken, lots, activeLotId]);
 
   if (!hasMapboxPublicToken) {
     return (

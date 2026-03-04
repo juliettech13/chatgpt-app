@@ -8,7 +8,7 @@ import "../css/fullscreen-layout.css";
 
 type FullscreenLayoutProps = {
   lots: ParkingLot[];
-  selectedLotId: string;
+  activeLotId: string;
   onSelectLot: (lotId: string) => void;
   onBook: (lot: ParkingLot) => void;
   bookingMessage: string | null;
@@ -20,7 +20,7 @@ type FullscreenLayoutProps = {
 
 export function FullscreenLayout({
   lots,
-  selectedLotId,
+  activeLotId,
   onSelectLot,
   onBook,
   bookingMessage,
@@ -29,11 +29,11 @@ export function FullscreenLayout({
   isInspectorOpen,
   onCloseInspector
 }: FullscreenLayoutProps) {
-  const selectedLot = lots.find((lot) => lot.id === selectedLotId) || lots[0];
+  const selectedLot = lots.find((lot) => lot.id === activeLotId) || lots[0];
 
   return (
     <section className="fullscreen-overlay">
-      <LotOptionsPanel lots={lots} selectedLotId={selectedLot.id} onSelectLot={onSelectLot} />
+      <LotOptionsPanel lots={lots} activeLotId={selectedLot.id} onSelectLot={onSelectLot} />
       {isInspectorOpen ? (
         <LotInspectorPanel
           lot={selectedLot}

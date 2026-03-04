@@ -7,17 +7,17 @@ import "../css/parking-carousel.css";
 
 type ParkingCarouselProps = {
   lots: ParkingLot[];
-  selectedLotId: string;
+  activeLotId: string;
   onOpenFullscreen: (lotId: string) => void;
 };
 
-export function ParkingCarousel({ lots, selectedLotId, onOpenFullscreen }: ParkingCarouselProps) {
+export function ParkingCarousel({ lots, activeLotId, onOpenFullscreen }: ParkingCarouselProps) {
   return (
     <section className="parking-carousel-overlay">
       <button
         type="button"
         className="parking-carousel__fullscreen-btn"
-        onClick={() => onOpenFullscreen(selectedLotId)}
+        onClick={() => onOpenFullscreen(activeLotId)}
         aria-label="Open fullscreen"
         title="Open fullscreen"
       >
@@ -35,7 +35,7 @@ export function ParkingCarousel({ lots, selectedLotId, onOpenFullscreen }: Parki
 
       <div className="parking-carousel__rail" role="list">
         {lots.map((lot) => {
-          const selected = selectedLotId === lot.id;
+          const selected = activeLotId === lot.id;
           return (
             <ParkingLotCard
               key={lot.id}
