@@ -21,7 +21,7 @@ import { createParkingService, loadSeedData } from "./lib/parking-service.js";
 const APP_VERSION: string = "1.0.0";
 const PORT: number = Number(process.env.PORT || 3000);
 const HOST: string = process.env.HOST || "0.0.0.0";
-const RESOURCE_URI: string = "ui://parking/parking-browser.v3.html";
+const RESOURCE_URI: string = "ui://parking/parking-browser.v4.html";
 const PROJECT_ROOT: string = process.cwd();
 const MIMETYPE: string = "text/html;profile=mcp-app";
 
@@ -108,7 +108,7 @@ function createServer(): McpServer {
     {
       title: "Search parking availability",
       description:
-        "Search ACME parking lots for a user request. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. This tool defaults to today and renders the widget from this call.",
+        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. IMPORTANT: if the user refines criteria after any previous result (date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives), you MUST call this tool again with updated filters instead of answering from earlier results. Examples that REQUIRE re-calling this tool: 'show only covered', '5 spots or less', 'what about tomorrow', 'closest option', 'exclude EV'. This tool defaults to today and renders the widget from this call.",
       inputSchema: searchInputSchema,
       annotations: {
         readOnlyHint: true,
@@ -125,10 +125,10 @@ function createServer(): McpServer {
     },
     async ({ query, filters }) => {
       const interpretedFilters = filters || {};
-      
+
       const { date, lots } = parkingService.searchLots(interpretedFilters);
       const results = parkingService.toSearchResults(lots);
-      const totalAvailable = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
+      const totalAvailableSpots = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
       const nearest = lots
         .slice(0, 2)
         .map((lot) => lot.name)
@@ -139,12 +139,14 @@ function createServer(): McpServer {
           date,
           query,
           appliedFilters: interpretedFilters,
+          totalMatches: results.length,
+          totalAvailableSpots,
           results
         },
         content: textContent(
           lots.length
             ? [
-                `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailable} total spots currently available.`,
+                `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailableSpots} total spots currently available.`,
                 nearest ? `Closest options include ${nearest}.` : "",
                 "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further."
               ].join("\n")
