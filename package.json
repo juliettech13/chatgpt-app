@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Parking booking ChatGPT App for ACME Corp",
   "type": "module",
-  "main": "server/index.js",
+  "main": "server/index.ts",
   "scripts": {
-    "dev": "node server/index.js",
+    "dev": "tsx server/index.ts",
+    "build:server": "tsc -p server/tsconfig.json",
     "build:web": "npm --prefix web run build",
     "test": "echo \"No tests configured yet\""
   },
@@ -23,5 +24,10 @@
     "@turf/distance": "^7.2.0",
     "dotenv": "^16.4.7",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   }
 }

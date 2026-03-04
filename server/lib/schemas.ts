@@ -43,6 +43,12 @@ export const bookInputSchema = z.object({
   date: z.string().optional().describe("YYYY-MM-DD date to mock-book.")
 });
 
-export function textContent(text) {
+export type LotFilters = z.infer<typeof lotFiltersSchema>;
+export type SearchInput = z.infer<typeof searchInputSchema>;
+export type FetchInput = z.infer<typeof fetchInputSchema>;
+export type AlternativesInput = z.infer<typeof alternativesInputSchema>;
+export type BookInput = z.infer<typeof bookInputSchema>;
+
+export function textContent(text: string): Array<{ type: "text"; text: string }> {
   return [{ type: "text", text }];
 }
