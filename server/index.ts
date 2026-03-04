@@ -16,7 +16,6 @@ import {
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
-import { parseLotFiltersWithSampling } from "./lib/filter-parser.js";
 import { createParkingService, loadSeedData } from "./lib/parking-service.js";
 
 const APP_VERSION: string = "1.0.0";
@@ -109,7 +108,7 @@ function createServer(): McpServer {
     {
       title: "Search parking availability",
       description:
-        "Search ACME parking lots for a user request. Prefer passing canonical filters when possible. This tool defaults to today and renders the widget from this call.",
+        "Search ACME parking lots for a user request. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. This tool defaults to today and renders the widget from this call.",
       inputSchema: searchInputSchema,
       annotations: {
         readOnlyHint: true,
@@ -124,8 +123,8 @@ function createServer(): McpServer {
         "openai/toolInvocation/invoked": "Loaded parking options"
       }
     },
-    async ({ query, filters }, extra) => {
-      const interpretedFilters = filters || (await parseLotFiltersWithSampling(query, extra));
+    async ({ query, filters }) => {
+      const interpretedFilters = filters || {};
       
       const { date, lots } = parkingService.searchLots(interpretedFilters);
       const results = parkingService.toSearchResults(lots);

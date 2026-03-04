@@ -25,7 +25,7 @@ export const searchInputSchema = z.object({
   query: z.string().describe("Natural language parking request from the employee."),
   filters: lotFiltersSchema
     .optional()
-    .describe("Optional canonical filters interpreted from the natural-language query.")
+    .describe("Optional canonical filters generated from the natural-language query. Include only fields the user clearly implies.")
 });
 
 export const fetchInputSchema = z.object({

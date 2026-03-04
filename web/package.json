@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/component.js",
   "scripts": {
-    "build": "esbuild src/component.tsx --bundle --format=esm --outfile=dist/component.js --loader:.css=css",
+    "build": "esbuild src/component.tsx --bundle --format=esm --minify --legal-comments=none --outfile=dist/component.js --loader:.css=css",
     "test": "echo \"No tests configured yet\""
   },
   "keywords": [
