@@ -27,17 +27,19 @@
 }
 
 .parking-lot-card__thumb {
+  position: relative;
   width: 72px;
   height: 60px;
   border-radius: 8px;
-}
-
-.parking-lot-card__thumb--garage {
+  overflow: hidden;
   background: radial-gradient(circle at 25% 25%, #3a7bd5, #1e3d73 58%, #15253f);
 }
 
-.parking-lot-card__thumb--surface_lot {
-  background: radial-gradient(circle at 20% 20%, #45b27f, #2a7f5a 58%, #14513b);
+.parking-lot-card__thumb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .parking-lot-card__copy {

@@ -9,6 +9,7 @@ export type ParkingLot = {
   id: string;
   name: string;
   type: string;
+  imageUrl?: string;
   date: string;
   location: { lat: number; lng: number };
   attributes: ParkingAttributes;

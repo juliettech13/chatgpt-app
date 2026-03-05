@@ -24,6 +24,7 @@ type ParkingLotSeed = {
   id: string;
   name: string;
   type: string;
+  image_url?: string;
   location: Coordinate;
   attributes: ParkingLotAttributes;
 };
@@ -60,6 +61,7 @@ export type EnrichedParkingLot = {
   id: string;
   name: string;
   type: string;
+  imageUrl?: string;
   date: string;
   location: Coordinate;
   attributes: ParkingLotAttributes;
@@ -137,9 +139,15 @@ function enrichLotForSeed(
   const availableSpots = Math.max(0, capacity - reserved);
   const distanceToHQMeters = distanceBetweenCoordinates(seedData.campus.location, lot.location);
   const optionalNote = note ? { note } : {};
+  const optionalImageUrl = lot.image_url ? { imageUrl: lot.image_url } : {};
 
   return {
-    ...lot,
+    id: lot.id,
+    name: lot.name,
+    type: lot.type,
+    ...optionalImageUrl,
+    location: lot.location,
+    attributes: lot.attributes,
     date,
     ...optionalNote,
     capacity,

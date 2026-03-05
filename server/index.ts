@@ -108,7 +108,7 @@ function createServer(): McpServer {
             "openai/widgetDomain": "https://acme-parking.example.com",
             "openai/widgetCSP": {
               connect_domains: ["https://api.mapbox.com", "https://events.mapbox.com"],
-              resource_domains: ["https://api.mapbox.com"],
+              resource_domains: ["https://api.mapbox.com", "https://res.cloudinary.com"],
               frame_domains: []
             }
           }
