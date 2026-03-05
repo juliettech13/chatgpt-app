@@ -9,7 +9,6 @@ import { useWidgetProps } from "./lib/use-widget-props";
 import type { DisplayMode, SearchStructuredContent } from "./types";
 
 import "./css/component.css";
-import "./css/parking-lot-card.css";
 
 const DEFAULT_CAMPUS_ADDRESS = "123 Market St, San Francisco, CA";
 const DEFAULT_SEARCH_RESULTS: SearchStructuredContent = {
@@ -52,10 +51,15 @@ function App() {
       ].join(":")
     );
     const signature = `${searchResults.date}|${signatureParts.join("|")}`;
-    if (signature === lastSignatureRef.current) return;
-    lastSignatureRef.current = signature;
 
-    setCurrentActiveLotId(searchResults.results[0]?.id ?? "");
+    const dataChanged = signature !== lastSignatureRef.current;
+
+    if (dataChanged) {
+      lastSignatureRef.current = signature;
+      const preferredLotId = window.openai?.widgetState?.selectedLotId;
+      const preferredInResults = preferredLotId != null && searchResults.results.some((lot) => lot.id === preferredLotId);
+      setCurrentActiveLotId(preferredInResults ? preferredLotId : (searchResults.results[0]?.id ?? ""));
+    }
     if (hostDisplayMode === "fullscreen" && searchResults.results.length) {
       setInspectorOpen(true);
     }
@@ -87,6 +91,12 @@ function App() {
       }
     });
   }
+
+  useEffect(() => {
+    if (!currentActiveLotId) return;
+
+    syncContext(currentActiveLotId);
+  }, [currentActiveLotId, searchResults.date, searchResults.results]);
 
   async function openFullscreen(lotId: string) {
     if (lotId !== currentActiveLotId) setCurrentActiveLotId(lotId);

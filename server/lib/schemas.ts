@@ -14,11 +14,7 @@ export const lotFiltersSchema = z.object({
     .array(z.enum(["surface_lot", "garage"]))
     .optional()
     .describe("Allowed lot types."),
-  maxDistanceMiles: z.number().nonnegative().optional().describe("Maximum distance from campus in miles."),
-  sortBy: z
-    .enum(["most_spots", "closest"])
-    .optional()
-    .describe("Sort order: most_spots or closest.")
+  maxDistanceMiles: z.number().nonnegative().optional().describe("Maximum distance from campus in miles.")
 });
 
 export const searchInputSchema = z.object({

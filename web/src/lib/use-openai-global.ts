@@ -16,6 +16,7 @@ export function useOpenAiGlobal<K extends keyof OpenAiGlobals>(
     }
 
     window.addEventListener("openai:set_globals", onSetGlobals, { passive: true });
+
     return () => {
       window.removeEventListener("openai:set_globals", onSetGlobals);
     };

@@ -26,6 +26,7 @@ type LotFeatureProperties = { lotId: string; spotsLabel: string; selected: boole
 
 function readCssCustomProperty(name: string, fallback: string) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
   return value || fallback;
 }
 
@@ -59,11 +60,14 @@ export function MapPanel({
 }: MapPanelProps) {
   const containerRef = useRef(null as HTMLDivElement | null);
   const mapRef = useRef(null as mapboxgl.Map | null);
+
   const hasInitialViewportRef = useRef(false);
   const hasSelectionCameraInitRef = useRef(false);
   const previousSelectedLotIdRef = useRef(null);
-  const [isStyleLoaded, setIsStyleLoaded] = useState(false);
   const markerCallbacksRef = useRef({ onMarkerActivate });
+
+  const [isStyleLoaded, setIsStyleLoaded] = useState(false);
+
   const mapboxPublicToken = window.__MAPBOX_PUBLIC_TOKEN__ || "";
   const hasMapboxPublicToken = Boolean(mapboxPublicToken);
 
@@ -164,7 +168,9 @@ export function MapPanel({
 
   useEffect(() => {
     const map = mapRef.current;
+
     if (!hasMapboxPublicToken || !map || !isStyleLoaded) return;
+
     map.resize();
   }, [hasMapboxPublicToken, isStyleLoaded, mode]);
 
@@ -221,8 +227,8 @@ export function MapPanel({
         <img
           className="map-panel-placeholder__image"
           src="https://images.unsplash.com/photo-1569336415962-a4bd9f69c07a?auto=format&fit=crop&w=1200&q=80"
-          alt="Placeholder downtown map"
-        />
+          alt="Map"
+          />
       </section>
     );
   }
