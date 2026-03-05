@@ -11,9 +11,6 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 import {
-  alternativesInputSchema,
-  bookInputSchema,
-  fetchInputSchema,
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
@@ -29,6 +26,13 @@ const SENTRY_DSN: string = process.env.SENTRY_DSN || "";
 const SENTRY_ENABLED: boolean = Boolean(SENTRY_DSN);
 const SENTRY_TRACES_SAMPLE_RATE: number = Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1);
 
+type HttpResponse = {
+  headersSent: boolean;
+  writableEnded: boolean;
+  status: (statusCode: number) => { json: (payload: unknown) => void };
+  end: () => void;
+};
+
 if (SENTRY_ENABLED) {
   Sentry.init({
     dsn: SENTRY_DSN,
@@ -38,26 +42,23 @@ if (SENTRY_ENABLED) {
   });
 }
 
-type HttpResponseLike = {
-  headersSent: boolean;
-  writableEnded: boolean;
-  status: (statusCode: number) => { json: (payload: unknown) => void };
-  end: () => void;
-};
-
 function createServer(): McpServer {
   const parkingService = createParkingService(loadSeedData(PROJECT_ROOT));
+
   const baseServer = new McpServer({
     name: "acme-parking-assistant",
     version: APP_VERSION
   });
+
   const server = (SENTRY_ENABLED ? Sentry.wrapMcpServerWithSentry(baseServer) : baseServer) as McpServer;
 
   function readWidgetBundle(): string {
     const bundlePath = path.join(PROJECT_ROOT, "web", "dist", "component.js");
+
     if (!fs.existsSync(bundlePath)) {
       return "console.warn('Widget bundle missing. Run: npm run build:web');";
     }
+
     return fs.readFileSync(bundlePath, "utf8");
   }
 
@@ -73,6 +74,7 @@ function createServer(): McpServer {
     const widgetJs = readWidgetBundle();
     const widgetCss = readWidgetStyles();
     const mapboxPublicToken = (process.env.MAPBOX_PUBLIC_TOKEN || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
     return `<!doctype html>
     <html lang="en">
       <head>
@@ -104,7 +106,7 @@ function createServer(): McpServer {
           mimeType: MIMETYPE,
           text: buildWidgetHtml(),
           _meta: {
-            "openai/widgetDescription": "Browse ACME parking options, inspect lot details, and mock-book a spot.",
+            "openai/widgetDescription": "Browse ACME parking options and inspect lot details.",
             "openai/widgetDomain": "https://acme-parking.example.com",
             "openai/widgetCSP": {
               connect_domains: ["https://api.mapbox.com", "https://events.mapbox.com"],
@@ -122,7 +124,7 @@ function createServer(): McpServer {
     {
       title: "Search parking availability",
       description:
-        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. IMPORTANT: if the user refines criteria after any previous result (date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives), you MUST call this tool again with updated filters instead of answering from earlier results. Examples that REQUIRE re-calling this tool: 'show only covered', '5 spots or less', 'what about tomorrow', 'closest option', 'exclude EV'. This tool defaults to today and renders the widget from this call.",
+        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. IMPORTANT: if the user refines criteria after any previous result (date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives), you MUST call this tool again with updated filters instead of answering from earlier results. Examples that REQUIRE re-calling this tool: 'show only covered', '5 spots or less', 'what about tomorrow', 'closest option', 'exclude EV'. This tool defaults to today if no date is provided by the user and renders the widget from this call.",
       inputSchema: searchInputSchema,
       annotations: {
         readOnlyHint: true,
@@ -170,107 +172,6 @@ function createServer(): McpServer {
     }
   );
 
-  server.registerTool(
-    "fetch",
-    {
-      title: "Fetch parking lot details",
-      description: "Fetch detailed information for a specific parking lot.",
-      inputSchema: fetchInputSchema,
-      annotations: {
-        readOnlyHint: true,
-        openWorldHint: false
-      }
-    },
-    async ({ id }) => {
-      const lot = parkingService.getLotById(id);
-      if (!lot) {
-        return {
-          structuredContent: { error: `Lot ${id} was not found.` },
-          content: textContent(`No parking lot found for id "${id}".`)
-        };
-      }
-
-      const document = parkingService.toFetchDocument(lot);
-      return {
-        structuredContent: document,
-        content: textContent(JSON.stringify(document))
-      };
-    }
-  );
-
-  server.registerTool(
-    "get_parking_alternatives",
-    {
-      title: "Get nearest parking alternatives",
-      description: "Find nearest alternatives to the currently selected parking lot.",
-      inputSchema: alternativesInputSchema,
-      annotations: {
-        readOnlyHint: true,
-        openWorldHint: false
-      }
-    },
-    async ({ lotId, date, maxResults }) => {
-      const resolvedDate = parkingService.resolveDateOrToday(date);
-      const alternatives = parkingService.getNearestAlternatives(lotId, resolvedDate, maxResults || 3);
-      return {
-        structuredContent: {
-          lotId,
-          date: resolvedDate,
-          alternatives
-        },
-        content: textContent(
-          alternatives.length
-            ? `Found ${alternatives.length} alternatives near ${lotId} for ${resolvedDate}.`
-            : `No alternatives found for ${lotId} on ${resolvedDate}.`
-        )
-      };
-    }
-  );
-
-  server.registerTool(
-    "book_parking",
-    {
-      title: "Mock book parking spot",
-      description: "Mock booking action for a parking lot and date without mutating inventory.",
-      inputSchema: bookInputSchema,
-      annotations: {
-        readOnlyHint: false,
-        openWorldHint: false,
-        destructiveHint: false
-      }
-    },
-    async ({ lotId, date }) => {
-      const resolvedDate = parkingService.resolveDateOrToday(date);
-      const selectedLot = parkingService.getLotById(lotId, resolvedDate);
-      if (!selectedLot) {
-        return {
-          structuredContent: {
-            success: false,
-            message: `Lot ${lotId} not found.`,
-            lotId,
-            date: resolvedDate
-          },
-          content: textContent(`Unable to mock-book. Lot ${lotId} was not found for ${resolvedDate}.`)
-        };
-      }
-
-      const confirmationCode = `MOCK-${selectedLot.id}-${resolvedDate.replaceAll("-", "")}`;
-      return {
-        structuredContent: {
-          success: true,
-          mock: true,
-          lotId: selectedLot.id,
-          lotName: selectedLot.name,
-          date: resolvedDate,
-          confirmationCode
-        },
-        content: textContent(
-          `Mock booking confirmed for ${selectedLot.name} on ${resolvedDate}. Confirmation: ${confirmationCode}.`
-        )
-      };
-    }
-  );
-
   return server;
 }
 
@@ -278,43 +179,45 @@ const app = createMcpExpressApp({
   host: HOST
 });
 
+type McpRequest = IncomingMessage & { auth?: AuthInfo; body?: unknown };
+
 app.post("/mcp", async (req: unknown, res: unknown) => {
   const server = createServer();
-  const httpRequest = req as IncomingMessage & { auth?: AuthInfo };
-  const httpResponse = res as ServerResponse;
-  const appResponse = res as HttpResponseLike;
-  const requestBody = (req as { body?: unknown }).body;
+  const request = req as McpRequest;
+  const response = res as HttpResponse;
   const transport = new StreamableHTTPServerTransport();
-  const transportWithCloseHandler = Object.assign(transport, {
-    onclose: transport.onclose ?? (() => {})
-  }) as Transport;
+  const transportWithClose = Object.assign(transport, { onclose: transport.onclose ?? (() => {}) }) as Transport;
 
   try {
-    await server.connect(transportWithCloseHandler);
-    await transport.handleRequest(httpRequest, httpResponse, requestBody);
+    await server.connect(transportWithClose);
+    await transport.handleRequest(request, response as unknown as ServerResponse, request.body);
   } catch (error) {
     console.error("Error handling MCP request", error);
+
     if (SENTRY_ENABLED) {
       Sentry.captureException(error);
     }
-    if (!appResponse.headersSent) {
-      appResponse.status(500).json({
+
+    if (!response.headersSent) {
+      response.status(500).json({
         jsonrpc: "2.0",
         error: { code: -32603, message: "Internal server error" },
         id: null
       });
     }
   } finally {
-    if (!appResponse.writableEnded) {
-      appResponse.end();
+    if (!response.writableEnded) {
+      response.end();
     }
     transport.close();
     await server.close();
   }
 });
 
-app.get("/health", (_req: unknown, res: HttpResponseLike) => {
-  res.status(200).json({ ok: true, name: "acme-parking-assistant", version: APP_VERSION });
+app.get("/", (_req: unknown, res: HttpResponse) => {
+  res
+    .status(200)
+    .json({ ok: true, name: "acme-parking-assistant", version: APP_VERSION });
 });
 
 app.listen(PORT, HOST, (error?: Error) => {

@@ -6,7 +6,7 @@ import { MapPanel } from "./components/MapPanel";
 import { ParkingCarousel } from "./components/ParkingCarousel";
 import { useOpenAiGlobal } from "./lib/use-openai-global";
 import { useWidgetProps } from "./lib/use-widget-props";
-import type { DisplayMode, ParkingLot, SearchStructuredContent } from "./types";
+import type { DisplayMode, SearchStructuredContent } from "./types";
 
 import "./css/component.css";
 import "./css/parking-lot-card.css";
@@ -35,8 +35,6 @@ function App() {
   const searchResults = normalizeSearchResults(toolProps);
 
   const [currentActiveLotId, setCurrentActiveLotId] = useState("");
-  const [bookingMessage, setBookingMessage] = useState(null as string | null);
-  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isInspectorOpen, setInspectorOpen] = useState(true);
   const lastSignatureRef = useRef("");
 
@@ -113,34 +111,6 @@ function App() {
     await openFullscreen(lotId);
   }
 
-  async function handleMockBook(lot: ParkingLot) {
-    if (isSubmittingBooking) return;
-
-    setIsSubmittingBooking(true);
-
-    if (!window.openai?.callTool) {
-      setBookingMessage(`Mock booking requested for ${lot.name}.`);
-      setIsSubmittingBooking(false);
-      return;
-    }
-
-    try {
-      const response = await window.openai.callTool("book_parking", {
-        lotId: lot.id,
-        date: searchResults.date
-      });
-
-      const message =
-        response?.content?.find((item) => item.type === "text")?.text ||
-        `Mock booking confirmed for ${lot.name} on ${searchResults.date}.`;
-
-      setBookingMessage(message);
-      window.openai?.sendFollowUpMessage?.({ text: message });
-    } finally {
-      setIsSubmittingBooking(false);
-    }
-  }
-
   const activeLotId = selectedLot?.id || "";
 
   return (
@@ -159,10 +129,7 @@ function App() {
             lots={searchResults.results}
             activeLotId={selectedLot.id}
             onSelectLot={handleFullscreenSelectLot}
-            onBook={handleMockBook}
-            bookingMessage={bookingMessage}
             campusAddress={DEFAULT_CAMPUS_ADDRESS}
-            isSubmittingBooking={isSubmittingBooking}
             isInspectorOpen={isInspectorOpen}
             onCloseInspector={() => setInspectorOpen(false)}
           />

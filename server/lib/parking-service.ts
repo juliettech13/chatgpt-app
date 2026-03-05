@@ -20,7 +20,7 @@ type ParkingLotAttributes = {
   security_patrol?: boolean;
 };
 
-type ParkingLotSeed = {
+type ParkingLot = {
   id: string;
   name: string;
   type: string;
@@ -37,7 +37,7 @@ type DailyInventoryEntry = {
   note?: string;
 };
 
-type CampusSeed = {
+type Campus = {
   id: string;
   name: string;
   address: string;
@@ -51,8 +51,8 @@ type ParkingPolicy = {
 
 export type ParkingSeedData = {
   timezone: string;
-  campus: CampusSeed;
-  lots: ParkingLotSeed[];
+  campus: Campus;
+  lots: ParkingLot[];
   daily_inventory: DailyInventoryEntry[];
   policy: ParkingPolicy;
 };
@@ -131,7 +131,7 @@ function resolveDateOrToday(inputDate?: string): string {
 
 function enrichLotForSeed(
   seedData: ParkingSeedData,
-  lot: ParkingLotSeed,
+  lot: ParkingLot,
   inventoryEntry: DailyInventoryEntry | undefined,
   date: string
 ): EnrichedParkingLot {
@@ -230,7 +230,7 @@ function searchLotsForSeed(
 
 function getLotByIdForSeed(
   seedData: ParkingSeedData,
-  lotsById: Map<string, ParkingLotSeed>,
+  lotsById: Map<string, ParkingLot>,
   id: string,
   dateInput?: string
 ): EnrichedParkingLot | null {
@@ -246,7 +246,7 @@ function getLotByIdForSeed(
 
 function getNearestAlternativesForSeed(
   seedData: ParkingSeedData,
-  lotsById: Map<string, ParkingLotSeed>,
+  lotsById: Map<string, ParkingLot>,
   lotId: string,
   dateInput?: string,
   maxResults = 3
@@ -295,7 +295,7 @@ function toFetchDocument(lot: EnrichedParkingLot): FetchDocument {
 }
 
 export function createParkingService(seedData: ParkingSeedData) {
-  const lotsById = new Map<string, ParkingLotSeed>(seedData.lots.map((lot) => [lot.id, lot]));
+  const lotsById = new Map<string, ParkingLot>(seedData.lots.map((lot) => [lot.id, lot]));
 
   const getLotsForDate = (dateInput?: string) => getLotsForDateForSeed(seedData, dateInput);
   const searchLots = (filters?: LotFilters) => searchLotsForSeed(seedData, filters);

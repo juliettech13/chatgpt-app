@@ -7,20 +7,14 @@ import "../css/lot-inspector-panel.css";
 
 type LotInspectorPanelProps = {
   lot: ParkingLot;
-  onBook: (lot: ParkingLot) => void;
-  bookingMessage: string | null;
   address: string;
   onClose: () => void;
-  isSubmittingBooking: boolean;
 };
 
 export function LotInspectorPanel({
   lot,
-  onBook,
-  bookingMessage,
   address,
-  onClose,
-  isSubmittingBooking
+  onClose
 }: LotInspectorPanelProps) {
   return (
     <aside className="lot-inspector-panel" aria-label="Lot details inspector">
@@ -91,15 +85,6 @@ export function LotInspectorPanel({
       </dl>
 
       {lot.note ? <p className="lot-inspector-panel__note">{lot.note}</p> : null}
-      <button
-        type="button"
-        className="lot-inspector-panel__book-btn"
-        onClick={() => onBook(lot)}
-        disabled={isSubmittingBooking}
-      >
-        Mock book this lot
-      </button>
-      {bookingMessage ? <p className="lot-inspector-panel__message">{bookingMessage}</p> : null}
     </aside>
   );
 }
