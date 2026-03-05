@@ -10,10 +10,7 @@ type FullscreenLayoutProps = {
   lots: ParkingLot[];
   activeLotId: string;
   onSelectLot: (lotId: string) => void;
-  onBook: (lot: ParkingLot) => void;
-  bookingMessage: string | null;
   campusAddress: string;
-  isSubmittingBooking: boolean;
   isInspectorOpen: boolean;
   onCloseInspector: () => void;
 };
@@ -22,10 +19,7 @@ export function FullscreenLayout({
   lots,
   activeLotId,
   onSelectLot,
-  onBook,
-  bookingMessage,
   campusAddress,
-  isSubmittingBooking,
   isInspectorOpen,
   onCloseInspector
 }: FullscreenLayoutProps) {
@@ -37,11 +31,8 @@ export function FullscreenLayout({
       {isInspectorOpen ? (
         <LotInspectorPanel
           lot={selectedLot}
-          onBook={onBook}
-          bookingMessage={bookingMessage}
           address={campusAddress}
           onClose={onCloseInspector}
-          isSubmittingBooking={isSubmittingBooking}
         />
       ) : null}
     </section>

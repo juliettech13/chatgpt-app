@@ -6,10 +6,9 @@ import { MapPanel } from "./components/MapPanel";
 import { ParkingCarousel } from "./components/ParkingCarousel";
 import { useOpenAiGlobal } from "./lib/use-openai-global";
 import { useWidgetProps } from "./lib/use-widget-props";
-import type { DisplayMode, ParkingLot, SearchStructuredContent } from "./types";
+import type { DisplayMode, SearchStructuredContent } from "./types";
 
 import "./css/component.css";
-import "./css/parking-lot-card.css";
 
 const DEFAULT_CAMPUS_ADDRESS = "123 Market St, San Francisco, CA";
 const DEFAULT_SEARCH_RESULTS: SearchStructuredContent = {
@@ -35,8 +34,6 @@ function App() {
   const searchResults = normalizeSearchResults(toolProps);
 
   const [currentActiveLotId, setCurrentActiveLotId] = useState("");
-  const [bookingMessage, setBookingMessage] = useState(null as string | null);
-  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isInspectorOpen, setInspectorOpen] = useState(true);
   const lastSignatureRef = useRef("");
 
@@ -54,10 +51,15 @@ function App() {
       ].join(":")
     );
     const signature = `${searchResults.date}|${signatureParts.join("|")}`;
-    if (signature === lastSignatureRef.current) return;
-    lastSignatureRef.current = signature;
 
-    setCurrentActiveLotId(searchResults.results[0]?.id ?? "");
+    const dataChanged = signature !== lastSignatureRef.current;
+
+    if (dataChanged) {
+      lastSignatureRef.current = signature;
+      const preferredLotId = window.openai?.widgetState?.selectedLotId;
+      const preferredInResults = preferredLotId != null && searchResults.results.some((lot) => lot.id === preferredLotId);
+      setCurrentActiveLotId(preferredInResults ? preferredLotId : (searchResults.results[0]?.id ?? ""));
+    }
     if (hostDisplayMode === "fullscreen" && searchResults.results.length) {
       setInspectorOpen(true);
     }
@@ -90,6 +92,12 @@ function App() {
     });
   }
 
+  useEffect(() => {
+    if (!currentActiveLotId) return;
+
+    syncContext(currentActiveLotId);
+  }, [currentActiveLotId, searchResults.date, searchResults.results]);
+
   async function openFullscreen(lotId: string) {
     if (lotId !== currentActiveLotId) setCurrentActiveLotId(lotId);
     setInspectorOpen(true);
@@ -113,34 +121,6 @@ function App() {
     await openFullscreen(lotId);
   }
 
-  async function handleMockBook(lot: ParkingLot) {
-    if (isSubmittingBooking) return;
-
-    setIsSubmittingBooking(true);
-
-    if (!window.openai?.callTool) {
-      setBookingMessage(`Mock booking requested for ${lot.name}.`);
-      setIsSubmittingBooking(false);
-      return;
-    }
-
-    try {
-      const response = await window.openai.callTool("book_parking", {
-        lotId: lot.id,
-        date: searchResults.date
-      });
-
-      const message =
-        response?.content?.find((item) => item.type === "text")?.text ||
-        `Mock booking confirmed for ${lot.name} on ${searchResults.date}.`;
-
-      setBookingMessage(message);
-      window.openai?.sendFollowUpMessage?.({ text: message });
-    } finally {
-      setIsSubmittingBooking(false);
-    }
-  }
-
   const activeLotId = selectedLot?.id || "";
 
   return (
@@ -159,10 +139,7 @@ function App() {
             lots={searchResults.results}
             activeLotId={selectedLot.id}
             onSelectLot={handleFullscreenSelectLot}
-            onBook={handleMockBook}
-            bookingMessage={bookingMessage}
             campusAddress={DEFAULT_CAMPUS_ADDRESS}
-            isSubmittingBooking={isSubmittingBooking}
             isInspectorOpen={isInspectorOpen}
             onCloseInspector={() => setInspectorOpen(false)}
           />

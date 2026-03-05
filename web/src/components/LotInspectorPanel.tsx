@@ -7,20 +7,14 @@ import "../css/lot-inspector-panel.css";
 
 type LotInspectorPanelProps = {
   lot: ParkingLot;
-  onBook: (lot: ParkingLot) => void;
-  bookingMessage: string | null;
   address: string;
   onClose: () => void;
-  isSubmittingBooking: boolean;
 };
 
 export function LotInspectorPanel({
   lot,
-  onBook,
-  bookingMessage,
   address,
-  onClose,
-  isSubmittingBooking
+  onClose
 }: LotInspectorPanelProps) {
   return (
     <aside className="lot-inspector-panel" aria-label="Lot details inspector">
@@ -59,10 +53,20 @@ export function LotInspectorPanel({
       <p className="lot-inspector-panel__address">{address}</p>
 
       <div className="lot-inspector-panel__chips">
-        <span>{capitalize(lot.type)}</span>
-        <span>{lot.attributes.covered ? "Covered" : "Uncovered"}</span>
-        <span>{lot.attributes.accessible ? "Accessible" : "Standard"}</span>
-        {lot.attributes.ev_charging ? <span>EV</span> : null}
+        <span className="lot-inspector-panel__chip lot-inspector-panel__chip--standard">
+          {capitalize(lot.type)}
+        </span>
+        <span className={`lot-inspector-panel__chip ${lot.attributes.covered ? "lot-inspector-panel__chip--covered" : "lot-inspector-panel__chip--uncovered"}`}>
+          {lot.attributes.covered ? "Covered" : "Uncovered"}
+        </span>
+        <span className={`lot-inspector-panel__chip ${lot.attributes.accessible ? "lot-inspector-panel__chip--accessible" : "lot-inspector-panel__chip--standard"}`}>
+          {lot.attributes.accessible ? "Accessible" : "Standard"}
+        </span>
+        {lot.attributes.ev_charging ? (
+          <span className="lot-inspector-panel__chip lot-inspector-panel__chip--ev">
+            EV
+          </span>
+        ) : null}
       </div>
 
       <dl className="lot-inspector-panel__list">
@@ -91,15 +95,6 @@ export function LotInspectorPanel({
       </dl>
 
       {lot.note ? <p className="lot-inspector-panel__note">{lot.note}</p> : null}
-      <button
-        type="button"
-        className="lot-inspector-panel__book-btn"
-        onClick={() => onBook(lot)}
-        disabled={isSubmittingBooking}
-      >
-        Mock book this lot
-      </button>
-      {bookingMessage ? <p className="lot-inspector-panel__message">{bookingMessage}</p> : null}
     </aside>
   );
 }

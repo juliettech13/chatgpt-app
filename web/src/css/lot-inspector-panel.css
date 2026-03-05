@@ -67,11 +67,30 @@
   flex-wrap: wrap;
 }
 
-.lot-inspector-panel__chips span {
+.lot-inspector-panel__chip {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
   padding: 3px 8px;
-  background: color-mix(in srgb, Canvas 92%, transparent);
+}
+
+.lot-inspector-panel__chip--covered {
+  background: color-mix(in srgb, #94a3b8 28%, Canvas);
+}
+
+.lot-inspector-panel__chip--uncovered {
+  background: color-mix(in srgb, #fcd34d 22%, Canvas);
+}
+
+.lot-inspector-panel__chip--accessible {
+  background: color-mix(in srgb, #86efac 26%, Canvas);
+}
+
+.lot-inspector-panel__chip--standard {
+  background: color-mix(in srgb, #e2e8f0 24%, Canvas);
+}
+
+.lot-inspector-panel__chip--ev {
+  background: color-mix(in srgb, #fde047 24%, Canvas);
 }
 
 .lot-inspector-panel__list {
