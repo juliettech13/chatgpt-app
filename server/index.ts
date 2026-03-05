@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
+import * as Sentry from "@sentry/node";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -24,6 +25,18 @@ const HOST: string = process.env.HOST || "0.0.0.0";
 const RESOURCE_URI: string = "ui://parking/parking-browser.v4.html";
 const PROJECT_ROOT: string = process.cwd();
 const MIMETYPE: string = "text/html;profile=mcp-app";
+const SENTRY_DSN: string = process.env.SENTRY_DSN || "";
+const SENTRY_ENABLED: boolean = Boolean(SENTRY_DSN);
+const SENTRY_TRACES_SAMPLE_RATE: number = Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1);
+
+if (SENTRY_ENABLED) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
+    release: process.env.SENTRY_RELEASE,
+    tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE
+  });
+}
 
 type HttpResponseLike = {
   headersSent: boolean;
@@ -34,10 +47,11 @@ type HttpResponseLike = {
 
 function createServer(): McpServer {
   const parkingService = createParkingService(loadSeedData(PROJECT_ROOT));
-  const server = new McpServer({
+  const baseServer = new McpServer({
     name: "acme-parking-assistant",
     version: APP_VERSION
   });
+  const server = (SENTRY_ENABLED ? Sentry.wrapMcpServerWithSentry(baseServer) : baseServer) as McpServer;
 
   function readWidgetBundle(): string {
     const bundlePath = path.join(PROJECT_ROOT, "web", "dist", "component.js");
@@ -280,6 +294,9 @@ app.post("/mcp", async (req: unknown, res: unknown) => {
     await transport.handleRequest(httpRequest, httpResponse, requestBody);
   } catch (error) {
     console.error("Error handling MCP request", error);
+    if (SENTRY_ENABLED) {
+      Sentry.captureException(error);
+    }
     if (!appResponse.headersSent) {
       appResponse.status(500).json({
         jsonrpc: "2.0",
@@ -303,6 +320,9 @@ app.get("/health", (_req: unknown, res: HttpResponseLike) => {
 app.listen(PORT, HOST, (error?: Error) => {
   if (error) {
     console.error("Failed to start MCP server", error);
+    if (SENTRY_ENABLED) {
+      Sentry.captureException(error);
+    }
     process.exit(1);
   }
   console.log(`ACME parking MCP server listening on http://${HOST}:${PORT}/mcp`);
