@@ -428,6 +428,282 @@
       "date": "2026-03-10",
       "capacity": 9,
       "reserved": 5
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-11",
+      "capacity": 12,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-11",
+      "capacity": 8,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-11",
+      "capacity": 11,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-11",
+      "capacity": 14,
+      "reserved": 5,
+      "note": "Event day demand expected after 4 PM"
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-11",
+      "capacity": 10,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-12",
+      "capacity": 9,
+      "reserved": 5,
+      "note": "2 spots blocked for maintenance window"
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-12",
+      "capacity": 13,
+      "reserved": 7
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-12",
+      "capacity": 8,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-12",
+      "capacity": 11,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-12",
+      "capacity": 14,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-13",
+      "capacity": 10,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-13",
+      "capacity": 11,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-13",
+      "capacity": 13,
+      "reserved": 8
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-13",
+      "capacity": 9,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-13",
+      "capacity": 12,
+      "reserved": 5
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-14",
+      "capacity": 14,
+      "reserved": 7
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-14",
+      "capacity": 10,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-14",
+      "capacity": 9,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-14",
+      "capacity": 12,
+      "reserved": 5,
+      "note": "Event day demand expected after 4 PM"
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-14",
+      "capacity": 8,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-15",
+      "capacity": 7,
+      "reserved": 4,
+      "note": "2 spots blocked for maintenance window"
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-15",
+      "capacity": 12,
+      "reserved": 5
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-15",
+      "capacity": 11,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-15",
+      "capacity": 13,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-15",
+      "capacity": 10,
+      "reserved": 7
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-16",
+      "capacity": 8,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-16",
+      "capacity": 14,
+      "reserved": 9
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-16",
+      "capacity": 10,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-16",
+      "capacity": 11,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-16",
+      "capacity": 9,
+      "reserved": 5
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-17",
+      "capacity": 11,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-17",
+      "capacity": 9,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-17",
+      "capacity": 14,
+      "reserved": 8
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-17",
+      "capacity": 8,
+      "reserved": 3,
+      "note": "Event day demand expected after 4 PM"
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-17",
+      "capacity": 13,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-18",
+      "capacity": 10,
+      "reserved": 5
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-18",
+      "capacity": 11,
+      "reserved": 6
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-18",
+      "capacity": 8,
+      "reserved": 3,
+      "note": "2 spots blocked for maintenance window"
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-18",
+      "capacity": 12,
+      "reserved": 7
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-18",
+      "capacity": 14,
+      "reserved": 9
+    },
+    {
+      "lot_id": "lot_hq_garage",
+      "date": "2026-03-19",
+      "capacity": 13,
+      "reserved": 4
+    },
+    {
+      "lot_id": "lot_overflow",
+      "date": "2026-03-19",
+      "capacity": 10,
+      "reserved": 3
+    },
+    {
+      "lot_id": "lot_financial_center",
+      "date": "2026-03-19",
+      "capacity": 12,
+      "reserved": 5
+    },
+    {
+      "lot_id": "lot_pier_annex",
+      "date": "2026-03-19",
+      "capacity": 9,
+      "reserved": 2
+    },
+    {
+      "lot_id": "lot_market_st_stack",
+      "date": "2026-03-19",
+      "capacity": 11,
+      "reserved": 6
     }
   ],
   "policy": {
