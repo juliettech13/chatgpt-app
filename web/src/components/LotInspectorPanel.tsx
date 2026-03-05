@@ -22,8 +22,6 @@ export function LotInspectorPanel({
   onClose,
   isSubmittingBooking
 }: LotInspectorPanelProps) {
-  const mediaClass = lot.type === "garage" ? "lot-inspector-panel__media--garage" : "lot-inspector-panel__media--surface";
-
   return (
     <aside className="lot-inspector-panel" aria-label="Lot details inspector">
       <header className="lot-inspector-panel__topbar">
@@ -46,7 +44,16 @@ export function LotInspectorPanel({
         </button>
       </header>
 
-      <div className={`lot-inspector-panel__media ${mediaClass}`} />
+      <div className="lot-inspector-panel__media">
+        {lot.imageUrl ? (
+          <img
+            className="lot-inspector-panel__media-image"
+            src={lot.imageUrl}
+            alt={lot.name}
+            loading="lazy"
+          />
+        ) : null}
+      </div>
 
       <h3 className="lot-inspector-panel__title">{lot.name}</h3>
       <p className="lot-inspector-panel__address">{address}</p>

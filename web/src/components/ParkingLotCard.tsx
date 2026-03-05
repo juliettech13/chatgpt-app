@@ -27,7 +27,16 @@ export function ParkingLotCard({
       onClick={onClick}
       disabled={disabled}
     >
-      <div className={`parking-lot-card__thumb parking-lot-card__thumb--${lot.type}`} />
+      <div className="parking-lot-card__thumb">
+        {lot.imageUrl ? (
+          <img
+            className="parking-lot-card__thumb-image"
+            src={lot.imageUrl}
+            alt={lot.name}
+            loading="lazy"
+          />
+        ) : null}
+      </div>
       <div className="parking-lot-card__copy">
         <div className="parking-lot-card__name">{lot.name}</div>
         <div className="parking-lot-card__meta">
