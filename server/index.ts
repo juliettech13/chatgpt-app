@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import * as Sentry from "@sentry/node";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -11,10 +12,13 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 import {
+  bookLotInputSchema,
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
 import { createParkingService, loadSeedData } from "./lib/parking-service.js";
+import { createDatabase } from "./lib/database.js";
+import { createBookingService } from "./lib/booking-service.js";
 
 const APP_VERSION: string = "1.0.0";
 const PORT: number = Number(process.env.PORT || 3000);
@@ -42,9 +46,12 @@ if (SENTRY_ENABLED) {
   });
 }
 
-function createServer(): McpServer {
-  const parkingService = createParkingService(loadSeedData(PROJECT_ROOT));
+const seedData = loadSeedData(PROJECT_ROOT);
+const database = createDatabase(PROJECT_ROOT, seedData);
+const bookingService = createBookingService(database);
+const parkingService = createParkingService(database, bookingService.getBookingForDate);
 
+function createServer(): McpServer {
   const baseServer = new McpServer({
     name: "acme-parking-assistant",
     version: APP_VERSION
@@ -124,27 +131,36 @@ function createServer(): McpServer {
     {
       title: "Search parking availability",
       description:
-        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. IMPORTANT: if the user refines criteria after any previous result (date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives), you MUST call this tool again with updated filters instead of answering from earlier results. Examples that REQUIRE re-calling this tool: 'show only covered', '5 spots or less', 'what about tomorrow', 'closest option', 'exclude EV'. This tool defaults to today if no date is provided by the user and renders the widget from this call.",
+        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. IMPORTANT: for booking requests, call this tool once first, show the available options, and ask the user which lot they want before calling `book_lot`. Never auto-book a lot without explicit user confirmation. If the user refines criteria after any previous result (date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives), you MUST call this tool again with updated filters instead of answering from earlier results. However, do NOT call this tool again with the same date and same effective filters if you already have current results on screen. Only call it again when the user explicitly changes the request within the conversation in a way that affects the result set, such as date, max/min spots, covered, accessible, EV, lot type, distance, sorting, or nearest alternatives. This tool defaults to today if no date is provided by the user and renders the widget from this call.",
       inputSchema: searchInputSchema,
       annotations: {
         readOnlyHint: true,
-        openWorldHint: false
+        openWorldHint: false,
       },
       _meta: {
         ui: {
-          resourceUri: RESOURCE_URI
+          resourceUri: RESOURCE_URI,
         },
         "openai/outputTemplate": RESOURCE_URI,
-        "openai/toolInvocation/invoking": "Finding available parking near campus...",
-        "openai/toolInvocation/invoked": "Loaded parking options"
-      }
+        "openai/resultCanProduceWidget": true,
+        "openai/toolInvocation/invoking":
+          "Finding available parking near campus...",
+        "openai/toolInvocation/invoked": "Loaded parking options",
+      },
     },
-    async ({ query, filters }) => {
+    async ({ query, bookingContextId, filters }) => {
+      const resolvedBookingContextId = bookingContextId || randomUUID();
       const interpretedFilters = filters || {};
 
-      const { date, lots } = parkingService.searchLots(interpretedFilters);
+      const { date, lots, currentDateBooking } = parkingService.searchLots(
+        resolvedBookingContextId,
+        interpretedFilters,
+      );
       const results = parkingService.toSearchResults(lots);
-      const totalAvailableSpots = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
+      const totalAvailableSpots = lots.reduce(
+        (acc, lot) => acc + lot.availableSpots,
+        0,
+      );
       const nearest = lots
         .slice(0, 2)
         .map((lot) => lot.name)
@@ -154,21 +170,84 @@ function createServer(): McpServer {
         structuredContent: {
           date,
           query,
+          bookingContextId: resolvedBookingContextId,
+          currentDateBooking,
           appliedFilters: interpretedFilters,
           totalMatches: results.length,
           totalAvailableSpots,
-          results
+          results,
         },
         content: textContent(
           lots.length
             ? [
                 `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailableSpots} total spots currently available.`,
                 nearest ? `Closest options include ${nearest}.` : "",
-                "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further."
+                currentDateBooking
+                  ? `You already have ${currentDateBooking.lotName} booked for ${date} with confirmation ID ${currentDateBooking.confirmationId}.`
+                  : "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further.",
               ].join("\n")
-            : `No parking lots matched "${query}" for ${date}. Try broadening your filter (for example, lower the minimum spots or remove one attribute constraint).`
-        )
+            : `No parking lots matched "${query}" for ${date}. Try broadening your filter (for example, lower the minimum spots or remove one attribute constraint).`,
+        ),
+        _meta: {
+          "openai/outputTemplate": RESOURCE_URI,
+        },
       };
+    },
+  );
+
+  server.registerTool(
+    "book_lot",
+    {
+      title: "Book a parking lot",
+      description:
+        "Book exactly one parking space in a selected ACME parking lot for a specific date after the user explicitly chooses a lot. This tool updates the live inventory immediately, enforces one booking per booking context per date, and returns refreshed widget state.",
+      inputSchema: bookLotInputSchema,
+      annotations: {
+        readOnlyHint: false,
+        openWorldHint: false
+      },
+      _meta: {
+        ui: {
+          resourceUri: RESOURCE_URI
+        },
+        "openai/outputTemplate": RESOURCE_URI,
+        "openai/widgetAccessible": true,
+        "openai/toolInvocation/invoking": "Booking your parking spot...",
+        "openai/toolInvocation/invoked": "Parking spot booked"
+      }
+    },
+    async ({ bookingContextId, lotId, date, query }) => {
+      try {
+        const currentDateBooking = bookingService.bookLot({ bookingContextId, lotId, date });
+        const { lots } = parkingService.searchLots(bookingContextId, { date });
+        const results = parkingService.toSearchResults(lots);
+        const totalAvailableSpots = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
+
+        return {
+          structuredContent: {
+            date,
+            query: query || `Booking for ${date}`,
+            bookingContextId,
+            currentDateBooking,
+            totalMatches: results.length,
+            totalAvailableSpots,
+            results
+          },
+          content: textContent(
+            `Booked ${currentDateBooking.lotName} for ${date}. Confirmation ID: ${currentDateBooking.confirmationId}.`
+          ),
+          _meta: {
+            "openai/outputTemplate": RESOURCE_URI
+          }
+        };
+      } catch (error) {
+        return {
+          isError: true,
+          content: textContent(
+            error instanceof Error ? error.message : "Failed to book the selected lot."
+          )
+        };
+      }
     }
   );
 

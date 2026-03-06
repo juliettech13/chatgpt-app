@@ -153,3 +153,13 @@
   border-radius: 8px;
   padding: 8px;
 }
+
+.lot-inspector-panel__message--error {
+  border-color: #f3c1c1;
+  background: #fff0f0;
+}
+
+.lot-inspector-panel__message--success {
+  border-color: #cfe6d0;
+  background: #ecf8ef;
+}

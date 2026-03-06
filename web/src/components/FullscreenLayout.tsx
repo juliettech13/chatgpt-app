@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { ParkingLot } from "../types";
+import type { CurrentDateBooking, ParkingLot } from "../types";
 import { LotInspectorPanel } from "./LotInspectorPanel";
 import { LotOptionsPanel } from "./LotOptionsPanel";
 
@@ -13,6 +13,11 @@ type FullscreenLayoutProps = {
   campusAddress: string;
   isInspectorOpen: boolean;
   onCloseInspector: () => void;
+  currentDateBooking: CurrentDateBooking | null;
+  isBooking: boolean;
+  bannerMessage: string | null;
+  bannerTone: "success" | "error";
+  onBookLot: (lotId: string) => Promise<void>;
 };
 
 export function FullscreenLayout({
@@ -21,7 +26,12 @@ export function FullscreenLayout({
   onSelectLot,
   campusAddress,
   isInspectorOpen,
-  onCloseInspector
+  onCloseInspector,
+  currentDateBooking,
+  isBooking,
+  bannerMessage,
+  bannerTone,
+  onBookLot
 }: FullscreenLayoutProps) {
   const selectedLot = lots.find((lot) => lot.id === activeLotId) || lots[0];
 
@@ -33,6 +43,11 @@ export function FullscreenLayout({
           lot={selectedLot}
           address={campusAddress}
           onClose={onCloseInspector}
+          currentDateBooking={currentDateBooking}
+          isBooking={isBooking}
+          bannerMessage={bannerMessage}
+          bannerTone={bannerTone}
+          onBookLot={onBookLot}
         />
       ) : null}
     </section>

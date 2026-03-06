@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { ParkingLot } from "../types";
+import type { CurrentDateBooking, ParkingLot } from "../types";
 import { capitalize } from "../lib/format";
 
 import "../css/lot-inspector-panel.css";
@@ -9,13 +9,40 @@ type LotInspectorPanelProps = {
   lot: ParkingLot;
   address: string;
   onClose: () => void;
+  currentDateBooking: CurrentDateBooking | null;
+  isBooking: boolean;
+  bannerMessage: string | null;
+  bannerTone: "success" | "error";
+  onBookLot: (lotId: string) => Promise<void>;
 };
 
 export function LotInspectorPanel({
   lot,
   address,
-  onClose
+  onClose,
+  currentDateBooking,
+  isBooking,
+  bannerMessage,
+  bannerTone,
+  onBookLot
 }: LotInspectorPanelProps) {
+  const alreadyBookedLot = currentDateBooking?.lotId === lot.id;
+  const hasBookingForDate = currentDateBooking != null;
+  const isSoldOut = lot.availableSpots <= 0;
+  const isButtonDisabled = isBooking || alreadyBookedLot || (hasBookingForDate && !alreadyBookedLot) || isSoldOut;
+  const buttonLabel = alreadyBookedLot
+    ? "Booked"
+    : hasBookingForDate
+      ? "Already booked for this day"
+      : isSoldOut
+        ? "Sold out"
+        : isBooking
+          ? "Booking..."
+          : "Book this lot";
+  const showSuccessBanner = alreadyBookedLot && bannerTone === "success" && Boolean(bannerMessage);
+  const showErrorBanner = bannerTone === "error" && Boolean(bannerMessage);
+  const showAlreadyBookedBanner = currentDateBooking && !alreadyBookedLot;
+
   return (
     <aside className="lot-inspector-panel" aria-label="Lot details inspector">
       <header className="lot-inspector-panel__topbar">
@@ -93,6 +120,35 @@ export function LotInspectorPanel({
           <dd>{lot.attributes.accessible ? "Yes" : "No"}</dd>
         </div>
       </dl>
+
+      {showSuccessBanner ? (
+        <p className={`lot-inspector-panel__message lot-inspector-panel__message--${bannerTone}`}>
+          {bannerMessage}
+        </p>
+      ) : null}
+
+      {showAlreadyBookedBanner ? (
+        <p className="lot-inspector-panel__message">
+          You already booked {currentDateBooking.lotName} for {currentDateBooking.date}. Confirmation ID: {currentDateBooking.confirmationId}.
+        </p>
+      ) : null}
+
+      {showErrorBanner ? (
+        <p className={`lot-inspector-panel__message lot-inspector-panel__message--${bannerTone}`}>
+          {bannerMessage}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        className="lot-inspector-panel__book-btn"
+        onClick={() => {
+          void onBookLot(lot.id);
+        }}
+        disabled={isButtonDisabled}
+      >
+        {buttonLabel}
+      </button>
 
       {lot.note ? <p className="lot-inspector-panel__note">{lot.note}</p> : null}
     </aside>
