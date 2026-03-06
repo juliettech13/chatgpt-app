@@ -222,7 +222,6 @@ function App() {
         bookingContextId: searchResults.bookingContextId,
         lotId,
         date: searchResults.date,
-        source: "widget",
         query: searchResults.query
       });
 
