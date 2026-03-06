@@ -2,13 +2,51 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import type { ParkingSeedData } from "./parking-service.js";
+type Coordinate = { lat: number; lng: number };
+
+type ParkingSeedData = {
+  timezone: string;
+  campus: {
+    id: string;
+    name: string;
+    address: string;
+    location: Coordinate;
+  };
+  lots: Array<{
+    id: string;
+    name: string;
+    type: string;
+    image_url?: string;
+    location: Coordinate;
+    attributes: {
+      covered: boolean;
+      accessible: boolean;
+      ev_charging?: boolean;
+      security_patrol?: boolean;
+    };
+  }>;
+  daily_inventory: Array<{
+    date: string;
+    lot_id: string;
+    capacity: number;
+    reserved: number;
+    note?: string;
+  }>;
+  policy: { hold_ttl_minutes: number; max_booking_days_ahead: number };
+};
+
+function loadSeedData(projectRoot: string): ParkingSeedData {
+  const filePath = path.join(projectRoot, "server", "data", "parking-seed.json");
+  const raw = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(raw) as ParkingSeedData;
+}
 
 function ensureDirectoryExists(filePath: string) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
-export function createDatabase(projectRoot: string, seedData: ParkingSeedData) {
+export function createDatabase(projectRoot: string) {
+  const seedData = loadSeedData(projectRoot);
   const dbPath = process.env.SQLITE_PATH || path.join(projectRoot, "server", "data", "parking.sqlite");
 
   ensureDirectoryExists(dbPath);

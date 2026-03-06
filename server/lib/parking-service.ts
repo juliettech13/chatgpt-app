@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 
 import distance from "@turf/distance";
@@ -50,14 +48,6 @@ type ParkingPolicy = {
   max_booking_days_ahead: number;
 };
 
-export type ParkingSeedData = {
-  timezone: string;
-  campus: Campus;
-  lots: ParkingLot[];
-  daily_inventory: DailyInventoryEntry[];
-  policy: ParkingPolicy;
-};
-
 export type EnrichedParkingLot = {
   id: string;
   name: string;
@@ -89,12 +79,6 @@ function distanceBetweenCoordinates(from: Coordinate, to: Coordinate): number {
   const toPoint = point([to.lng, to.lat]);
   const kilometers = distance(fromPoint, toPoint, { units: "kilometers" });
   return Math.round(kilometers * 1000);
-}
-
-export function loadSeedData(projectRoot: string): ParkingSeedData {
-  const filePath = path.join(projectRoot, "server", "data", "parking-seed.json");
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw) as ParkingSeedData;
 }
 
 type CampusRow = {

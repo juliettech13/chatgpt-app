@@ -16,7 +16,7 @@ import {
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
-import { createParkingService, loadSeedData } from "./lib/parking-service.js";
+import { createParkingService } from "./lib/parking-service.js";
 import { createDatabase } from "./lib/database.js";
 import { createBookingService } from "./lib/booking-service.js";
 
@@ -46,8 +46,7 @@ if (SENTRY_ENABLED) {
   });
 }
 
-const seedData = loadSeedData(PROJECT_ROOT);
-const database = createDatabase(PROJECT_ROOT, seedData);
+const database = createDatabase(PROJECT_ROOT);
 const bookingService = createBookingService(database);
 const parkingService = createParkingService(database, bookingService.getBookingForDate);
 
