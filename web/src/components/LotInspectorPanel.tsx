@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { CurrentDateBooking, ParkingLot } from "../types";
+import type { Booking, ParkingLot } from "../types";
 import { capitalize } from "../lib/format";
 
 import "../css/lot-inspector-panel.css";
@@ -9,7 +9,7 @@ type LotInspectorPanelProps = {
   lot: ParkingLot;
   address: string;
   onClose: () => void;
-  currentDateBooking: CurrentDateBooking | null;
+  booking: Booking | null;
   isBooking: boolean;
   bannerMessage: string | null;
   bannerTone: "success" | "error";
@@ -20,14 +20,14 @@ export function LotInspectorPanel({
   lot,
   address,
   onClose,
-  currentDateBooking,
+  booking,
   isBooking,
   bannerMessage,
   bannerTone,
   onBookLot
 }: LotInspectorPanelProps) {
-  const alreadyBookedLot = currentDateBooking?.lotId === lot.id;
-  const hasBookingForDate = currentDateBooking != null;
+  const alreadyBookedLot = booking?.lotId === lot.id;
+  const hasBookingForDate = booking != null;
   const isSoldOut = lot.availableSpots <= 0;
   const isButtonDisabled = isBooking || alreadyBookedLot || (hasBookingForDate && !alreadyBookedLot) || isSoldOut;
   const buttonLabel = alreadyBookedLot
@@ -41,7 +41,7 @@ export function LotInspectorPanel({
           : "Book this lot";
   const showSuccessBanner = alreadyBookedLot && bannerTone === "success" && Boolean(bannerMessage);
   const showErrorBanner = bannerTone === "error" && Boolean(bannerMessage);
-  const showAlreadyBookedBanner = currentDateBooking && !alreadyBookedLot;
+  const showAlreadyBookedBanner = booking && !alreadyBookedLot;
 
   return (
     <aside className="lot-inspector-panel" aria-label="Lot details inspector">
@@ -129,7 +129,7 @@ export function LotInspectorPanel({
 
       {showAlreadyBookedBanner ? (
         <p className="lot-inspector-panel__message">
-          You already booked {currentDateBooking.lotName} for {currentDateBooking.date}. Confirmation ID: {currentDateBooking.confirmationId}.
+          You already booked {booking.lotName} for {booking.date}. Confirmation ID: {booking.confirmationId}.
         </p>
       ) : null}
 

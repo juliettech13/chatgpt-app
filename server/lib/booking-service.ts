@@ -7,7 +7,7 @@ type BookLotArgs = {
   date: string;
 };
 
-export type CurrentDateBooking = {
+export type Booking = {
   confirmationId: string;
   lotId: string;
   lotName: string;
@@ -22,7 +22,10 @@ type BookingRow = {
   created_at: string;
 };
 
-function mapBooking(row: BookingRow | undefined, lotNameById: Map<string, string>): CurrentDateBooking | null {
+function formatBookingRowIntoBooking(
+  row: BookingRow | undefined,
+  lotNameById: Map<string, string>
+): Booking | null {
   if (!row) return null;
 
   return {
@@ -35,7 +38,8 @@ function mapBooking(row: BookingRow | undefined, lotNameById: Map<string, string
 
 function getLotNamesFromDb(db: DatabaseSync): Map<string, string> {
   const rows = db.prepare("SELECT id, name FROM lots").all() as { id: string; name: string }[];
-  return new Map(rows.map((r) => [r.id, r.name]));
+
+  return new Map(rows.map((row) => [row.id, row.name]));
 }
 
 export function createBookingService(db: DatabaseSync) {
@@ -66,12 +70,13 @@ export function createBookingService(db: DatabaseSync) {
     WHERE date = ? AND lot_id = ? AND reserved < capacity
   `);
 
-  function getBookingForDate(bookingContextId: string, date: string): CurrentDateBooking | null {
+  function getBookingForDate(bookingContextId: string, date: string): Booking | null {
     const row = getBookingStmt.get(bookingContextId, date) as BookingRow | undefined;
-    return mapBooking(row, lotNameById);
+
+    return formatBookingRowIntoBooking(row, lotNameById);
   }
 
-  function bookLot({ bookingContextId, lotId, date }: BookLotArgs): CurrentDateBooking {
+  function bookLot({ bookingContextId, lotId, date }: BookLotArgs): Booking {
     db.exec("BEGIN IMMEDIATE TRANSACTION");
 
     try {

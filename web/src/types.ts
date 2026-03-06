@@ -25,7 +25,7 @@ export type SearchResult = ParkingLot & {
   title: string;
 };
 
-export type CurrentDateBooking = {
+export type Booking = {
   confirmationId: string;
   lotId: string;
   lotName: string;
@@ -36,7 +36,7 @@ export type SearchStructuredContent = {
   date: string;
   query: string;
   bookingContextId: string;
-  currentDateBooking: CurrentDateBooking | null;
+  booking: Booking | null;
   appliedFilters?: Record<string, unknown>;
   totalMatches?: number;
   totalAvailableSpots?: number;
@@ -51,7 +51,6 @@ export type WidgetState = {
   selectedLotId?: string;
   selectedDate?: string;
   bookingContextId?: string;
-  currentDateBooking?: CurrentDateBooking | null;
   selectedLot?: {
     id: string;
     name: string;

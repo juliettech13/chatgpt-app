@@ -5,7 +5,7 @@ import { point } from "@turf/helpers";
 
 import { metersToMiles } from "./distance.js";
 import type { LotFilters } from "./schemas.js";
-import type { CurrentDateBooking } from "./booking-service.js";
+import type { Booking } from "./booking-service.js";
 
 type Coordinate = {
   lat: number;
@@ -43,11 +43,6 @@ type Campus = {
   location: Coordinate;
 };
 
-type ParkingPolicy = {
-  hold_ttl_minutes: number;
-  max_booking_days_ahead: number;
-};
-
 export type EnrichedParkingLot = {
   id: string;
   name: string;
@@ -71,7 +66,7 @@ export type ParkingSearchResult = EnrichedParkingLot & {
 type SearchLotsResponse = {
   date: string;
   lots: EnrichedParkingLot[];
-  currentDateBooking: CurrentDateBooking | null;
+  booking: Booking | null;
 };
 
 function distanceBetweenCoordinates(from: Coordinate, to: Coordinate): number {
@@ -220,7 +215,7 @@ function applyFilters(lots: EnrichedParkingLot[], filters: LotFilters = {}): Enr
 
 function resolveLotSearch(
   db: DatabaseSync,
-  getBookingForDate: (bookingContextId: string, date: string) => CurrentDateBooking | null,
+  getBookingForDate: (bookingContextId: string, date: string) => Booking | null,
   bookingContextId: string,
   filters?: LotFilters
 ): SearchLotsResponse {
@@ -229,10 +224,11 @@ function resolveLotSearch(
   const dateInput = filters?.date;
   const { date, lots } = getLotsForDate(db, timezone, campusLocation, dateInput);
   const filteredLots = applyFilters(lots, filters || {});
+
   return {
     date,
     lots: filteredLots,
-    currentDateBooking: getBookingForDate(bookingContextId, date)
+    booking: getBookingForDate(bookingContextId, date)
   };
 }
 
@@ -245,7 +241,7 @@ function toSearchResults(lots: EnrichedParkingLot[]): ParkingSearchResult[] {
 
 export function createParkingService(
   db: DatabaseSync,
-  getBookingForDate: (bookingContextId: string, date: string) => CurrentDateBooking | null
+  getBookingForDate: (bookingContextId: string, date: string) => Booking | null
 ) {
   const searchLots = (bookingContextId: string, filters?: LotFilters) =>
     resolveLotSearch(db, getBookingForDate, bookingContextId, filters);

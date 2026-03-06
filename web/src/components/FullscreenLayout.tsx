@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { CurrentDateBooking, ParkingLot } from "../types";
+import type { Booking, ParkingLot } from "../types";
 import { LotInspectorPanel } from "./LotInspectorPanel";
 import { LotOptionsPanel } from "./LotOptionsPanel";
 
@@ -13,7 +13,7 @@ type FullscreenLayoutProps = {
   campusAddress: string;
   isInspectorOpen: boolean;
   onCloseInspector: () => void;
-  currentDateBooking: CurrentDateBooking | null;
+  booking: Booking | null;
   isBooking: boolean;
   bannerMessage: string | null;
   bannerTone: "success" | "error";
@@ -27,7 +27,7 @@ export function FullscreenLayout({
   campusAddress,
   isInspectorOpen,
   onCloseInspector,
-  currentDateBooking,
+  booking,
   isBooking,
   bannerMessage,
   bannerTone,
@@ -43,7 +43,7 @@ export function FullscreenLayout({
           lot={selectedLot}
           address={campusAddress}
           onClose={onCloseInspector}
-          currentDateBooking={currentDateBooking}
+          booking={booking}
           isBooking={isBooking}
           bannerMessage={bannerMessage}
           bannerTone={bannerTone}

@@ -34,6 +34,10 @@ export const bookLotInputSchema = z.object({
     .describe("Anonymous booking context identifier returned by the search tool for this ChatGPT session."),
   lotId: z.string().describe("Canonical lot identifier to book."),
   date: z.string().describe("Target booking date in YYYY-MM-DD format."),
+  source: z
+    .enum(["widget"])
+    .optional()
+    .describe("Optional booking origin. Present only for widget-initiated bookings so the server can preserve fullscreen widget behavior."),
   query: z
     .string()
     .optional()
