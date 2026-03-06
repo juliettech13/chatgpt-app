@@ -19,13 +19,30 @@ export const lotFiltersSchema = z.object({
 
 export const searchInputSchema = z.object({
   query: z.string().describe("Natural language parking request from the employee."),
+  bookingContextId: z
+    .string()
+    .optional()
+    .describe("Anonymous booking context identifier reused across searches and bookings in the same ChatGPT session."),
   filters: lotFiltersSchema
     .optional()
     .describe("Optional canonical filters generated from the natural-language query. Include only fields the user clearly implies.")
 });
 
+export const bookLotInputSchema = z.object({
+  bookingContextId: z
+    .string()
+    .describe("Anonymous booking context identifier returned by the search tool for this ChatGPT session."),
+  lotId: z.string().describe("Canonical lot identifier to book."),
+  date: z.string().describe("Target booking date in YYYY-MM-DD format."),
+  query: z
+    .string()
+    .optional()
+    .describe("The most recent user request or search query, if available, so the widget can keep displaying consistent context.")
+});
+
 export type LotFilters = z.infer<typeof lotFiltersSchema>;
 export type SearchInput = z.infer<typeof searchInputSchema>;
+export type BookLotInput = z.infer<typeof bookLotInputSchema>;
 
 export function textContent(text: string): Array<{ type: "text"; text: string }> {
   return [{ type: "text", text }];

@@ -25,9 +25,21 @@ export type SearchResult = ParkingLot & {
   title: string;
 };
 
+export type Booking = {
+  confirmationId: string;
+  lotId: string;
+  lotName: string;
+  date: string;
+};
+
 export type SearchStructuredContent = {
   date: string;
   query: string;
+  bookingContextId: string;
+  booking: Booking | null;
+  appliedFilters?: Record<string, unknown>;
+  totalMatches?: number;
+  totalAvailableSpots?: number;
   results: SearchResult[];
 };
 
@@ -37,6 +49,16 @@ export type ToolOutputSnapshot = {
 
 export type WidgetState = {
   selectedLotId?: string;
+  selectedDate?: string;
+  bookingContextId?: string;
+  selectedLot?: {
+    id: string;
+    name: string;
+    covered: boolean;
+    accessible: boolean;
+    distanceToHQMeters: number;
+    availableSpots: number;
+  };
 };
 
 export type DisplayMode = "inline" | "fullscreen";
@@ -47,10 +69,16 @@ export type OpenAiGlobals = {
   widgetState?: WidgetState;
 };
 
+export type ToolCallResult = {
+  isError?: boolean;
+  structuredContent?: Partial<SearchStructuredContent>;
+  content?: Array<{ type?: string; text?: string }>;
+};
+
 export type OpenAIApi = {
   requestDisplayMode?: (params: { mode: DisplayMode }) => Promise<{ mode: DisplayMode }>;
   setWidgetState?: (state: WidgetState & Record<string, unknown>) => void;
-  updateModelContext?: (payload: Record<string, unknown>) => Promise<void>;
+  callTool?: (toolName: string, args: Record<string, unknown>) => Promise<ToolCallResult>;
 };
 
 export type OpenAiSetGlobalsEvent = CustomEvent<{

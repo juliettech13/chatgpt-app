@@ -1,11 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
+import type { DatabaseSync } from "node:sqlite";
 
 import distance from "@turf/distance";
 import { point } from "@turf/helpers";
 
 import { metersToMiles } from "./distance.js";
 import type { LotFilters } from "./schemas.js";
+import type { Booking } from "./booking-service.js";
 
 type Coordinate = {
   lat: number;
@@ -43,19 +43,6 @@ type Campus = {
   location: Coordinate;
 };
 
-type ParkingPolicy = {
-  hold_ttl_minutes: number;
-  max_booking_days_ahead: number;
-};
-
-export type ParkingSeedData = {
-  timezone: string;
-  campus: Campus;
-  lots: ParkingLot[];
-  daily_inventory: DailyInventoryEntry[];
-  policy: ParkingPolicy;
-};
-
 export type EnrichedParkingLot = {
   id: string;
   name: string;
@@ -76,6 +63,12 @@ export type ParkingSearchResult = EnrichedParkingLot & {
   title: string;
 };
 
+type SearchLotsResponse = {
+  date: string;
+  lots: EnrichedParkingLot[];
+  booking: Booking | null;
+};
+
 function distanceBetweenCoordinates(from: Coordinate, to: Coordinate): number {
   const fromPoint = point([from.lng, from.lat]);
   const toPoint = point([to.lng, to.lat]);
@@ -83,48 +76,89 @@ function distanceBetweenCoordinates(from: Coordinate, to: Coordinate): number {
   return Math.round(kilometers * 1000);
 }
 
-export function loadSeedData(projectRoot: string): ParkingSeedData {
-  const filePath = path.join(projectRoot, "server", "data", "parking-seed.json");
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw) as ParkingSeedData;
+type CampusRow = {
+  timezone: string;
+  lat: number;
+  lng: number;
+};
+
+function getCampusFromDb(db: DatabaseSync): CampusRow {
+  const row = db.prepare("SELECT timezone, lat, lng FROM campus LIMIT 1").get() as CampusRow | undefined;
+  if (!row) throw new Error("Campus not found in database. Run with seed data to initialize.");
+  return row;
 }
 
-function getInventoryForDate(seedData: ParkingSeedData, date: string): DailyInventoryEntry[] {
-  return seedData.daily_inventory.filter((entry) => entry.date === date);
+type LotRow = {
+  id: string;
+  name: string;
+  type: string;
+  image_url: string | null;
+  lat: number;
+  lng: number;
+  covered: number;
+  accessible: number;
+  ev_charging: number;
+  security_patrol: number;
+  capacity: number | null;
+  reserved: number | null;
+  note: string | null;
+};
+
+function getLotsWithInventoryForDate(db: DatabaseSync, date: string): LotRow[] {
+  const query = db.prepare(`
+    SELECT
+      l.id,
+      l.name,
+      l.type,
+      l.image_url,
+      l.lat,
+      l.lng,
+      l.covered,
+      l.accessible,
+      l.ev_charging,
+      l.security_patrol,
+      i.capacity,
+      i.reserved,
+      i.note
+    FROM lots l
+    LEFT JOIN daily_inventory i ON l.id = i.lot_id AND i.date = ?
+    ORDER BY l.id
+  `);
+  return query.all(date) as LotRow[];
 }
 
-function resolveDateOrToday(inputDate?: string): string {
+function resolveDateOrToday(timezone: string, inputDate?: string): string {
   if (inputDate) return inputDate;
 
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Los_Angeles",
+    timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
   }).format(new Date());
 }
 
-function enrichLotDetails(
-  seedData: ParkingSeedData,
-  lot: ParkingLot,
-  inventoryEntry: DailyInventoryEntry | undefined,
-  date: string
-): EnrichedParkingLot {
-  const { capacity = 0, reserved = 0, note } = inventoryEntry ?? {};
+function rowToEnrichedLot(row: LotRow, campusLocation: Coordinate, date: string): EnrichedParkingLot {
+  const capacity = row.capacity ?? 0;
+  const reserved = row.reserved ?? 0;
   const availableSpots = Math.max(0, capacity - reserved);
-  const distanceToHQMeters = distanceBetweenCoordinates(seedData.campus.location, lot.location);
-  const optionalNote = note ? { note } : {};
-  const optionalImageUrl = lot.image_url ? { imageUrl: lot.image_url } : {};
+  const lotLocation: Coordinate = { lat: row.lat, lng: row.lng };
+  const distanceToHQMeters = distanceBetweenCoordinates(campusLocation, lotLocation);
 
   return {
-    id: lot.id,
-    name: lot.name,
-    type: lot.type,
-    ...optionalImageUrl,
-    location: lot.location,
-    attributes: lot.attributes,
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    ...(row.image_url ? { imageUrl: row.image_url } : {}),
+    location: lotLocation,
+    attributes: {
+      covered: Boolean(row.covered),
+      accessible: Boolean(row.accessible),
+      ev_charging: Boolean(row.ev_charging),
+      ...(row.security_patrol ? { security_patrol: true } : {})
+    },
     date,
-    ...optionalNote,
+    ...(row.note ? { note: row.note } : {}),
     capacity,
     reserved,
     availableSpots,
@@ -134,19 +168,16 @@ function enrichLotDetails(
 }
 
 function getLotsForDate(
-  seedData: ParkingSeedData,
+  db: DatabaseSync,
+  timezone: string,
+  campusLocation: Coordinate,
   dateInput?: string
 ): { date: string; lots: EnrichedParkingLot[] } {
-  const date = resolveDateOrToday(dateInput);
-
-  const inventoryByLotId = new Map(
-    getInventoryForDate(seedData, date).map((item) => [item.lot_id, item])
-  );
-
-  const lots = seedData.lots
-    .map((lot) => enrichLotDetails(seedData, lot, inventoryByLotId.get(lot.id), date))
+  const date = resolveDateOrToday(timezone, dateInput);
+  const rows = getLotsWithInventoryForDate(db, date);
+  const lots = rows
+    .map((row) => rowToEnrichedLot(row, campusLocation, date))
     .sort((a, b) => a.distanceToHQMeters - b.distanceToHQMeters);
-
   return { date, lots };
 }
 
@@ -182,14 +213,23 @@ function applyFilters(lots: EnrichedParkingLot[], filters: LotFilters = {}): Enr
   return filtered;
 }
 
-function searchLotsForSeed(
-  seedData: ParkingSeedData,
+function resolveLotSearch(
+  db: DatabaseSync,
+  getBookingForDate: (bookingContextId: string, date: string) => Booking | null,
+  bookingContextId: string,
   filters?: LotFilters
-): { date: string; lots: EnrichedParkingLot[] } {
+): SearchLotsResponse {
+  const { timezone, lat, lng } = getCampusFromDb(db);
+  const campusLocation: Coordinate = { lat, lng };
   const dateInput = filters?.date;
-  const { date, lots } = getLotsForDate(seedData, dateInput);
+  const { date, lots } = getLotsForDate(db, timezone, campusLocation, dateInput);
   const filteredLots = applyFilters(lots, filters || {});
-  return { date, lots: filteredLots };
+
+  return {
+    date,
+    lots: filteredLots,
+    booking: getBookingForDate(bookingContextId, date)
+  };
 }
 
 function toSearchResults(lots: EnrichedParkingLot[]): ParkingSearchResult[] {
@@ -199,8 +239,12 @@ function toSearchResults(lots: EnrichedParkingLot[]): ParkingSearchResult[] {
   }));
 }
 
-export function createParkingService(seedData: ParkingSeedData) {
-  const searchLots = (filters?: LotFilters) => searchLotsForSeed(seedData, filters);
+export function createParkingService(
+  db: DatabaseSync,
+  getBookingForDate: (bookingContextId: string, date: string) => Booking | null
+) {
+  const searchLots = (bookingContextId: string, filters?: LotFilters) =>
+    resolveLotSearch(db, getBookingForDate, bookingContextId, filters);
 
   return {
     searchLots,
