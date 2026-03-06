@@ -1,0 +1,158 @@
+.search-refinement-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: min(600px, calc(100% - 360px));
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(12, 18, 31, 0.9);
+  color: #f5f7fb;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.search-refinement-bar__field {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  gap: 6px;
+  position: relative;
+  min-width: 148px;
+  padding: 6px 8px 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.search-refinement-bar__date-display {
+  font: inherit;
+  color: inherit;
+  pointer-events: none;
+}
+
+.search-refinement-bar__native-date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.search-refinement-bar__date-picker-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: #ffffff;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.search-refinement-bar__date-picker-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.search-refinement-bar__toggles {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.search-refinement-bar__toggle,
+.search-refinement-bar__secondary-btn,
+.search-refinement-bar__primary-btn {
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-refinement-bar__toggle {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.search-refinement-bar__toggle--active {
+  color: #13203b;
+}
+
+.search-refinement-bar__toggle--covered.search-refinement-bar__toggle--active {
+  background: color-mix(in srgb, #94a3b8 28%, white);
+}
+
+.search-refinement-bar__toggle--ev.search-refinement-bar__toggle--active {
+  background: color-mix(in srgb, #fde047 24%, white);
+}
+
+.search-refinement-bar__toggle--accessible.search-refinement-bar__toggle--active {
+  background: color-mix(in srgb, #86efac 26%, white);
+}
+
+.search-refinement-bar__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.search-refinement-bar__secondary-btn,
+.search-refinement-bar__status {
+  padding: 6px 12px;
+  text-align: center;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.search-refinement-bar__secondary-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  width: 72px;
+  flex: 0 0 72px;
+}
+
+.search-refinement-bar__status {
+  color: rgba(255, 255, 255, 0.72);
+  width: 108px;
+  flex: 0 0 108px;
+}
+
+.search-refinement-bar__toggle:disabled,
+.search-refinement-bar__secondary-btn:disabled,
+.search-refinement-bar__field[tabindex="-1"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 920px) {
+  .search-refinement-bar {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+  }
+
+  .search-refinement-bar__field {
+    width: 100%;
+  }
+
+  .search-refinement-bar__actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}

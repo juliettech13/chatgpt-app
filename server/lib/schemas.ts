@@ -40,9 +40,23 @@ export const bookLotInputSchema = z.object({
     .describe("The most recent user request or search query, if available, so the widget can keep displaying consistent context.")
 });
 
+export const refineWidgetResultsInputSchema = z.object({
+  bookingContextId: z
+    .string()
+    .describe("Anonymous booking context identifier for the currently mounted parking browser session."),
+  query: z
+    .string()
+    .describe("The current parking-browser search query so the refreshed results keep matching the user's browsing context."),
+  date: z.string().describe("Target date in YYYY-MM-DD format."),
+  requireCovered: z.boolean().optional().describe("Only include covered lots when true."),
+  requireAccessible: z.boolean().optional().describe("Only include accessible lots when true."),
+  requireEv: z.boolean().optional().describe("Only include lots with EV charging when true.")
+});
+
 export type LotFilters = z.infer<typeof lotFiltersSchema>;
 export type SearchInput = z.infer<typeof searchInputSchema>;
 export type BookLotInput = z.infer<typeof bookLotInputSchema>;
+export type RefineWidgetResultsInput = z.infer<typeof refineWidgetResultsInputSchema>;
 
 export function textContent(text: string): Array<{ type: "text"; text: string }> {
   return [{ type: "text", text }];

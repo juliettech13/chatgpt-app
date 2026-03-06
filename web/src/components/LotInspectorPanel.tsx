@@ -11,8 +11,6 @@ type LotInspectorPanelProps = {
   onClose: () => void;
   booking: Booking | null;
   isBooking: boolean;
-  bannerMessage: string | null;
-  bannerTone: "success" | "error";
   onBookLot: (lotId: string) => Promise<void>;
 };
 
@@ -22,8 +20,6 @@ export function LotInspectorPanel({
   onClose,
   booking,
   isBooking,
-  bannerMessage,
-  bannerTone,
   onBookLot
 }: LotInspectorPanelProps) {
   const alreadyBookedLot = booking?.lotId === lot.id;
@@ -39,8 +35,6 @@ export function LotInspectorPanel({
         : isBooking
           ? "Booking..."
           : "Book this lot";
-  const showSuccessBanner = alreadyBookedLot && bannerTone === "success" && Boolean(bannerMessage);
-  const showErrorBanner = bannerTone === "error" && Boolean(bannerMessage);
   const showAlreadyBookedBanner = booking && !alreadyBookedLot;
 
   return (
@@ -121,21 +115,9 @@ export function LotInspectorPanel({
         </div>
       </dl>
 
-      {showSuccessBanner ? (
-        <p className={`lot-inspector-panel__message lot-inspector-panel__message--${bannerTone}`}>
-          {bannerMessage}
-        </p>
-      ) : null}
-
       {showAlreadyBookedBanner ? (
         <p className="lot-inspector-panel__message">
           You already booked {booking.lotName} for {booking.date}. Confirmation ID: {booking.confirmationId}.
-        </p>
-      ) : null}
-
-      {showErrorBanner ? (
-        <p className={`lot-inspector-panel__message lot-inspector-panel__message--${bannerTone}`}>
-          {bannerMessage}
         </p>
       ) : null}
 

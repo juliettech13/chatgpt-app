@@ -51,13 +51,17 @@ export type WidgetState = {
   selectedLotId?: string;
   selectedDate?: string;
   bookingContextId?: string;
-  selectedLot?: {
+  selectedLotView?: {
     id: string;
     name: string;
+    date: string;
     covered: boolean;
     accessible: boolean;
+    evCharging: boolean;
     distanceToHQMeters: number;
     availableSpots: number;
+    isBookedForSelectedDate: boolean;
+    bookingConfirmationId?: string;
   };
 };
 
