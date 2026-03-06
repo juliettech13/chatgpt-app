@@ -5,8 +5,8 @@ ACME Parking Assistant is a ChatGPT app built using OpenAI Apps SDK with a remot
 ## Overview
 
 **- MCP transport:** streamable HTTP at `/mcp`
-**- Model capabilities:** `search`, `book_lot`
-**- UI surface:** inline map + carousel, fullscreen lot inspection, in-widget booking
+**- Model capabilities:** `search`, `book_lot`, `refine_widget_results`
+**- UI surface:** inline map + carousel, fullscreen lot inspection, fullscreen-only refinement, in-widget booking
 **- Data source:** SQLite-backed daily inventory seeded from `server/data/parking-seed.json`
 **- External dependencies:** Mapbox for maps, optional Sentry for telemetry
 
@@ -82,9 +82,9 @@ Open a new chat, type `/acme` and press enter. Then ask for parking availability
 
 ### Server
 
-The server is implemented in [server/index.ts] registers:
+The server is implemented in [server/index.ts] and registers:
 
-- two tools: `search`, `book_lot`
+- three tools: `search`, `book_lot`, `refine_widget_results`
 - one UI resource: `ui://parking/parking-browser.v4.html`
 
 The search service in [server/lib/parking-service.ts]:
@@ -100,6 +100,19 @@ The booking service in [server/lib/booking-service.ts]:
 - decrements availability by incrementing `reserved`
 - returns refreshed results for widget-initiated updates
 
+Tool responsibilities are intentionally split:
+
+- `search`
+  - chat/composer discovery entrypoint
+  - the only widget-producing tool
+- `refine_widget_results`
+  - widget-only refresh path for fullscreen filters and date changes
+  - keeps the mounted fullscreen widget in sync without depending on a fresh chat turn
+- `book_lot`
+  - mutation tool for booking
+  - if done through the widget, booking succeeds first, then the widget refreshes its current filtered view
+  - if done through chat, booking succeeds and sends a confirmation message in text
+
 ### Widget
 
 The widget entrypoint is [web/src/component.tsx].
@@ -109,25 +122,23 @@ The built assets are read from `web/dist` and inlined into the MCP resource resp
 The widget:
 
 - reads tool output from `window.openai`
-- renders Mapbox markers and a lot carousel inline
+- renders Mapbox markers and a carousel inline for lots that match the current search request
 - opens a fullscreen inspector view for deeper comparison
+- shows a fullscreen-only refinement bar for date, covered, EV, and accessibility filters
+- applies fullscreen refinements through `refine_widget_results` to showcase filtered lots
 - allows booking from the fullscreen inspector
-- writes the selected lot back to widget state
+- handles the selected lot and changes it in the map, carousel, inspector panel, and for chat
 - enables widget-triggered bookings
+- showcases booking success and error notifications at the fullscreen layout
 
-## Repository layout
+### Fullscreen behavior
 
-```text
-server/
-  index.ts
-  lib/parking-service.ts
-  lib/schemas.ts
-  data/parking-seed.json
-web/
-  src/component.tsx
-  src/components/*
-  src/lib/*
-```
+Fullscreen is the primary browse-and-book surface:
+
+- the left options panel lists lots
+- the map shows pins/markers of lots that match the current search request
+- the right inspector shows the currently selected lot
+
 
 ## Golden prompt set
 
@@ -138,24 +149,25 @@ Use these prompts to validate the experience quickly:
 3. `Is this covered?`
 4. `What’s the nearest alternative if this fills up?`
 5. `Show me only covered parking with EV charging.`
-6. `Exclude EV charging and keep it within 0.3 miles.`
-7. `I need a garage with no more than 2 spots left.`
-8. `Find a covered lot with 50 open spaces.`
+6. `Is this lot booked?`
+7. `Book this lot.`
+
 
 These cover:
 
 - initial booking intent
 - in-chat follow-up questions about a selected lot
 - nearest-alternative reasoning after search
-- follow-up refinement with a fresh tool call
-- date handling
+- fullscreen follow-up refinement through the widget
+- date handling through the picker
 - attribute filters
-- max/min availability filters
+- widget-originated booking
+- booking-aware follow-up questions about the selected lot
 - no-results behavior
 
 ## Current limitations
 
-- chat-triggered bookings are less reliable when they try to replace an active fullscreen widget; the most stable path is still one widget-rendering `search` turn plus widget-originated interaction
+- chat-triggered bookings and chat-triggered fullscreen refinements are still less reliable than widget-originated interaction; the most stable path is one widget-rendering `search` turn followed by fullscreen interaction inside the widget
 - seeded SQLite inventory rather than a live parking system
 - no auth, no payment
 - no automated tests configured yet, although Sentry is enabled for telemetry
