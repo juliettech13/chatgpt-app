@@ -13,6 +13,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
 import {
   bookLotInputSchema,
+  refineWidgetResultsInputSchema,
   searchInputSchema,
   textContent
 } from "./lib/schemas.js";
@@ -131,7 +132,7 @@ function createServer(): McpServer {
     {
       title: "Search parking availability",
       description:
-        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. This is the required tool for any request to find, browse, compare, refresh, or re-check parking availability. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. For booking requests, call this tool first, show the available options, and ask the user which lot they want before calling `book_lot`. Never auto-book a lot without explicit user confirmation. After any successful chat-triggered `book_lot`, call this tool again with the same bookingContextId and date so the parking browser refreshes. If the user asks to change, narrow, widen, sort, compare, or refresh the list of lots in any way, you MUST call this tool again with updated filters instead of answering from earlier results. This includes requests like covered only, EV only, covered plus EV, accessible only, nearest option, nearest alternative, max distance, minimum spots, maximum spots, tomorrow, Wednesday, Friday, and any request about which lots should be shown next. Do NOT manually filter or summarize prior results in prose when the user is asking for a new filtered or refreshed view. Do NOT answer availability questions from stale prior results. This tool defaults to today if no date is provided by the user and renders the parking widget.",
+        "Search ACME parking lots for a user request and return the latest authoritative availability for map/list rendering. This is the required tool for any request to find, browse, compare, refresh, or re-check parking availability. Convert natural language intent into canonical `filters` whenever possible, and keep `query` as the original user phrasing. Omit unknown filter fields instead of guessing. For booking requests, call this tool first, show the available options, and ask the user which lot they want before calling `book_lot`. Never auto-book a lot without explicit user confirmation. After any successful chat-triggered `book_lot`, call this tool again with the same bookingContextId and date so the parking browser refreshes. If the user asks to change, narrow, widen, sort, compare, or refresh the list of lots in any way, you MUST call this tool again with updated filters instead of answering from earlier results. This includes requests like covered only, EV only, covered plus EV, accessible only, nearest option, nearest alternative, max distance, minimum spots, maximum spots, tomorrow, Wednesday, Friday, and any request about which lots should be shown next. Do NOT manually filter or summarize prior results in prose when the user is asking for a new filtered or refreshed view. Do NOT answer availability questions from stale prior results. This tool defaults to today if no date is provided by the user and renders the parking widget. NEVER return just text, always render the parking widget. NEVER offer to change the date or lot after a booking is confirmed.",
       inputSchema: searchInputSchema,
       annotations: {
         readOnlyHint: true,
@@ -160,10 +161,6 @@ function createServer(): McpServer {
         (acc, lot) => acc + lot.availableSpots,
         0,
       );
-      const nearest = lots
-        .slice(0, 2)
-        .map((lot) => lot.name)
-        .join(" and ");
 
       return {
         structuredContent: {
@@ -178,20 +175,71 @@ function createServer(): McpServer {
         },
         content: textContent(
           lots.length
-            ? [
-                `Found ${lots.length} parking options near ACME HQ for ${date}, with ${totalAvailableSpots} total spots currently available.`,
-                nearest ? `Closest options include ${nearest}.` : "",
-                booking
-                  ? `You already have ${booking.lotName} booked for ${date} with confirmation ID ${booking.confirmationId}.`
-                  : "Use the widget to compare locations, then tell me your preferences (covered, EV charging, accessibility, or max walking distance) and I can refine further.",
-              ].join("\n")
-            : `No parking lots matched "${query}" for ${date}. Try broadening your filter (for example, lower the minimum spots or remove one attribute constraint).`,
+            ? booking
+              ? `Loaded ${lots.length} parking options for ${date} in the parking browser. You already have ${booking.lotName} booked for this date.`
+              : `Loaded ${lots.length} parking options for ${date} in the parking browser.`
+            : `No parking options matched for ${date}. Adjust the filters in the parking browser or ask for a broader search.`,
         ),
         _meta: {
           "openai/outputTemplate": RESOURCE_URI
         },
       };
     },
+  );
+
+  server.registerTool(
+    "refine_widget_results",
+    {
+      title: "Refine parking browser results",
+      description:
+        "Refresh the currently mounted parking browser with updated canonical filters from fullscreen controls. This tool is only for widget-originated Apply and Reset actions inside the parking browser. Do not use it for initial discovery, and do not use it for user chat/composer requests. For any user message asking to find, browse, compare, narrow, widen, or refresh parking options, use `search` instead.",
+      inputSchema: refineWidgetResultsInputSchema,
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: false
+      },
+      _meta: {
+        ui: {
+          resourceUri: RESOURCE_URI
+        },
+        "openai/widgetAccessible": true,
+        "openai/toolInvocation/invoking": "Updating parking browser...",
+        "openai/toolInvocation/invoked": "Updated parking browser"
+      }
+    },
+    async ({ query, bookingContextId, date, requireCovered, requireAccessible, requireEv }) => {
+      const interpretedFilters = {
+        date,
+        ...(requireCovered ? { requireCovered: true } : {}),
+        ...(requireAccessible ? { requireAccessible: true } : {}),
+        ...(requireEv ? { requireEv: true } : {})
+      };
+
+      const { date: resolvedDate, lots, booking } = parkingService.searchLots(
+        bookingContextId,
+        interpretedFilters
+      );
+      const results = parkingService.toSearchResults(lots);
+      const totalAvailableSpots = lots.reduce((acc, lot) => acc + lot.availableSpots, 0);
+
+      return {
+        structuredContent: {
+          date: resolvedDate,
+          query,
+          bookingContextId,
+          booking,
+          appliedFilters: interpretedFilters,
+          totalMatches: results.length,
+          totalAvailableSpots,
+          results
+        },
+        content: textContent(
+          lots.length
+            ? `Updated parking options for ${resolvedDate} in the parking browser.`
+            : `No parking options matched for ${resolvedDate}. Adjust the filters in the parking browser or reset them.`
+        )
+      };
+    }
   );
 
   server.registerTool(

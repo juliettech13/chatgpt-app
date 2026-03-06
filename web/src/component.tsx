@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { FullscreenLayout } from "./components/FullscreenLayout";
 import { MapPanel } from "./components/MapPanel";
 import { ParkingCarousel } from "./components/ParkingCarousel";
+import { SearchRefinementBar, type RefinementState } from "./components/SearchRefinementBar";
 import { useOpenAiGlobal } from "./lib/use-openai-global";
 import { useWidgetProps } from "./lib/use-widget-props";
 import type { DisplayMode, SearchStructuredContent, ToolCallResult } from "./types";
@@ -44,6 +45,17 @@ function extractResultText(result?: ToolCallResult): string {
     .trim();
 }
 
+function extractRefinementState(searchResults: SearchStructuredContent): RefinementState {
+  const appliedFilters = searchResults.appliedFilters || {};
+
+  return {
+    date: searchResults.date,
+    requireCovered: appliedFilters.requireCovered === true,
+    requireAccessible: appliedFilters.requireAccessible === true,
+    requireEv: appliedFilters.requireEv === true
+  };
+}
+
 function getResultsSnapshot(searchResults: SearchStructuredContent): string {
   const lotSnapshot = searchResults.results
     .map((lot) => `${lot.id}:${lot.availableSpots}:${lot.reserved}`)
@@ -58,6 +70,14 @@ function getResultsSnapshot(searchResults: SearchStructuredContent): string {
   ].join("::");
 }
 
+function getSearchRequestKey(searchResults: SearchStructuredContent): string {
+  return [
+    searchResults.date,
+    searchResults.query,
+    searchResults.bookingContextId
+  ].join("::");
+}
+
 function resolveActiveLotId(
   searchResults: SearchStructuredContent,
   currentActiveLotId: string
@@ -65,6 +85,7 @@ function resolveActiveLotId(
   if (searchResults.results.some((lot) => lot.id === currentActiveLotId)) {
     return currentActiveLotId;
   }
+
   const { selectedLotId, selectedDate, bookingContextId } = window.openai?.widgetState ?? {};
 
   const useWidget =
@@ -84,15 +105,22 @@ function App() {
   const [currentActiveLotId, setCurrentActiveLotId] = useState("");
   const [isInspectorOpen, setInspectorOpen] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [bannerMessage, setBannerMessage] = useState(null as string | null);
   const [bannerTone, setBannerTone] = useState("success" as "success" | "error");
+  const [bookingNotice, setBookingNotice] = useState(null as null | {
+    lotId: string;
+    date: string;
+    message: string;
+    confirmationId: string;
+  });
   const [pendingBookingSync, setPendingBookingSync] = useState(null as null | {
     bookingContextId: string;
     date: string;
     confirmationId: string;
   });
 
-  const lastConfirmationIdRef = useRef("");
+  const lastWidgetAuthoredSnapshotRef = useRef("");
 
   useEffect(() => {
     const updatedSearchResults = normalizeSearchResults(toolProps);
@@ -102,7 +130,21 @@ function App() {
 
     const currentSnapshot = getResultsSnapshot(searchResults);
     const nextSnapshot = getResultsSnapshot(updatedSearchResults);
+    const currentSearchRequest = getSearchRequestKey(searchResults);
+    const updatedSearchRequest = getSearchRequestKey(updatedSearchResults);
     const hasMeaningfulHostChange = currentSnapshot !== nextSnapshot;
+
+    if (
+      lastWidgetAuthoredSnapshotRef.current &&
+      currentSnapshot === lastWidgetAuthoredSnapshotRef.current
+    ) {
+      if (nextSnapshot === currentSnapshot) {
+        lastWidgetAuthoredSnapshotRef.current = "";
+      } else if (hostDisplayMode === "fullscreen" || currentSearchRequest === updatedSearchRequest) {
+        return;
+      }
+    }
+
     if (pendingBookingSync) {
       const isSamePendingBookingDay =
         updatedSearchResults.bookingContextId === pendingBookingSync.bookingContextId &&
@@ -119,12 +161,15 @@ function App() {
     }
 
     if (!hasMeaningfulHostChange) {
+      if (lastWidgetAuthoredSnapshotRef.current === currentSnapshot) {
+        lastWidgetAuthoredSnapshotRef.current = "";
+      }
       return;
     }
 
     setSearchResults(updatedSearchResults);
     setCurrentActiveLotId((currentLotId) => resolveActiveLotId(updatedSearchResults, currentLotId));
-  }, [toolProps, pendingBookingSync, searchResults]);
+  }, [hostDisplayMode, pendingBookingSync, searchResults, toolProps]);
 
   const selectedLot = searchResults.results.find((lot) => lot.id === currentActiveLotId) || searchResults.results[0];
 
@@ -133,18 +178,26 @@ function App() {
   function syncContext(nextLotId: string) {
     const lot = searchResults.results.find((item) => item.id === nextLotId);
     if (!lot) return;
+    const booking = searchResults.booking;
+    const isBookedForSelectedDate = booking?.lotId === lot.id;
 
     const updatedWidgetState = {
       selectedLotId: nextLotId,
       selectedDate: searchResults.date,
       bookingContextId: searchResults.bookingContextId,
-      selectedLot: {
+      selectedLotView: {
         id: lot.id,
         name: lot.name,
+        date: searchResults.date,
         covered: lot.attributes.covered,
         accessible: lot.attributes.accessible,
+        evCharging: Boolean(lot.attributes.ev_charging),
         distanceToHQMeters: lot.distanceToHQMeters,
-        availableSpots: lot.availableSpots
+        availableSpots: lot.availableSpots,
+        isBookedForSelectedDate,
+        ...(isBookedForSelectedDate && booking?.confirmationId
+          ? { bookingConfirmationId: booking.confirmationId }
+          : {})
       }
     };
 
@@ -152,31 +205,18 @@ function App() {
   }
 
   useEffect(() => {
-    const confirmationId = searchResults.booking?.confirmationId || "";
+    if (!bookingNotice) return;
 
-    if (confirmationId && confirmationId !== lastConfirmationIdRef.current) {
-      lastConfirmationIdRef.current = confirmationId;
-
-      setBannerTone("success");
-      setBannerMessage(
-        `Booked ${searchResults.booking?.lotName} for ${searchResults.date}. Confirmation ID: ${confirmationId}.`
-      );
-
-      return;
+    if (bookingNotice.date !== searchResults.date) {
+      setBookingNotice(null);
     }
-
-    if (!confirmationId) {
-      lastConfirmationIdRef.current = "";
-
-      setBannerMessage((current) => (bannerTone === "success" ? null : current));
-    }
-  }, [searchResults.booking, searchResults.date, bannerTone]);
+  }, [bookingNotice, searchResults.date]);
 
   useEffect(() => {
     if (!currentActiveLotId) return;
 
     syncContext(currentActiveLotId);
-  }, [currentActiveLotId, searchResults.date, searchResults.results]);
+  }, [currentActiveLotId, searchResults.date, searchResults.results, searchResults.booking]);
 
   async function openFullscreen(lotId: string) {
     if (lotId !== currentActiveLotId) setCurrentActiveLotId(lotId);
@@ -207,21 +247,29 @@ function App() {
     await openFullscreen(lotId);
   }
 
+  function handleDismissNotice() {
+    setBookingNotice(null);
+    setBannerMessage(null);
+  }
+
   async function handleBookLot(lotId: string) {
     if (!searchResults.bookingContextId) {
+      setBookingNotice(null);
       setBannerTone("error");
       setBannerMessage("Missing booking context. Run a new search and try again.");
       return;
     }
 
     setIsBooking(true);
+    setBookingNotice(null);
     setBannerMessage(null);
 
     try {
+      const bookingDate = selectedLot?.date ?? searchResults.date;
       const result = await window.openai?.callTool?.("book_lot", {
         bookingContextId: searchResults.bookingContextId,
         lotId,
-        date: searchResults.date,
+        date: bookingDate,
         query: searchResults.query
       });
 
@@ -230,27 +278,63 @@ function App() {
       }
 
       if (result.isError) {
+        setBookingNotice(null);
         setBannerTone("error");
         setBannerMessage(extractResultText(result) || "Failed to book the selected lot.");
         return;
       }
 
-      const updatedSearchResults = normalizeSearchResults(result.structuredContent);
-      setSearchResults(updatedSearchResults);
-      if (updatedSearchResults.booking) {
-        setPendingBookingSync({
-          bookingContextId: updatedSearchResults.bookingContextId,
-          date: updatedSearchResults.date,
-          confirmationId: updatedSearchResults.booking.confirmationId
+      const bookingResults = normalizeSearchResults(result.structuredContent);
+      const confirmationMessage = bookingResults.booking
+        ? `Booked ${bookingResults.booking.lotName} for ${bookingResults.date}. Confirmation ID: ${bookingResults.booking.confirmationId}.`
+        : (extractResultText(result) || "Parking spot booked.");
+      const appliedRefinementState = extractRefinementState(searchResults);
+
+      const refreshResult = await window.openai?.callTool?.("refine_widget_results", {
+        query: searchResults.query,
+        bookingContextId: searchResults.bookingContextId,
+        date: appliedRefinementState.date,
+        ...(appliedRefinementState.requireCovered ? { requireCovered: true } : {}),
+        ...(appliedRefinementState.requireAccessible ? { requireAccessible: true } : {}),
+        ...(appliedRefinementState.requireEv ? { requireEv: true } : {})
+      });
+
+      if (!refreshResult || refreshResult.isError) {
+        setSearchResults(bookingResults);
+        lastWidgetAuthoredSnapshotRef.current = getResultsSnapshot(bookingResults);
+        if (bookingResults.booking) {
+          setPendingBookingSync({
+            bookingContextId: bookingResults.bookingContextId,
+            date: bookingDate,
+            confirmationId: bookingResults.booking.confirmationId
+          });
+        }
+      } else {
+        const refreshedSearchResults = normalizeSearchResults(refreshResult.structuredContent);
+        setSearchResults(refreshedSearchResults);
+        lastWidgetAuthoredSnapshotRef.current = getResultsSnapshot(refreshedSearchResults);
+        if (refreshedSearchResults.booking) {
+          setPendingBookingSync({
+            bookingContextId: refreshedSearchResults.bookingContextId,
+            date: bookingDate,
+            confirmationId: refreshedSearchResults.booking.confirmationId
+          });
+        }
+        setCurrentActiveLotId((currentLotId) => resolveActiveLotId(refreshedSearchResults, currentLotId));
+        setInspectorOpen(true);
+      }
+
+      if (bookingResults.booking) {
+        setBookingNotice({
+          lotId: bookingResults.booking.lotId,
+          date: bookingResults.date,
+          message: confirmationMessage,
+          confirmationId: bookingResults.booking.confirmationId
         });
       }
-      setBannerTone("success");
-      setBannerMessage(
-        updatedSearchResults.booking
-          ? `Booked ${updatedSearchResults.booking.lotName} for ${updatedSearchResults.date}. Confirmation ID: ${updatedSearchResults.booking.confirmationId}.`
-          : "Parking spot booked."
-      );
+      setBannerMessage(null);
     } catch {
+      setBookingNotice(null);
       setBannerTone("error");
       setBannerMessage("Failed to book the selected lot.");
     } finally {
@@ -258,7 +342,57 @@ function App() {
     }
   }
 
+  async function handleSearchRefinement(nextRefinement: RefinementState) {
+    setIsSearching(true);
+
+    try {
+      const result = await window.openai?.callTool?.("refine_widget_results", {
+        query: searchResults.query,
+        bookingContextId: searchResults.bookingContextId,
+        date: nextRefinement.date,
+        ...(nextRefinement.requireCovered ? { requireCovered: true } : {}),
+        ...(nextRefinement.requireAccessible ? { requireAccessible: true } : {}),
+        ...(nextRefinement.requireEv ? { requireEv: true } : {})
+      });
+
+      if (!result) {
+        throw new Error("No response received from the search tool.");
+      }
+
+      if (result.isError) {
+        setBannerTone("error");
+        setBannerMessage(extractResultText(result) || "Failed to refresh parking options.");
+        return;
+      }
+
+      const updatedSearchResults = normalizeSearchResults(result.structuredContent);
+      setSearchResults(updatedSearchResults);
+      lastWidgetAuthoredSnapshotRef.current = getResultsSnapshot(updatedSearchResults);
+      setCurrentActiveLotId((currentLotId) => resolveActiveLotId(updatedSearchResults, currentLotId));
+      setInspectorOpen(true);
+      setBannerMessage(null);
+    } catch {
+      setBannerTone("error");
+      setBannerMessage("Failed to refresh parking options.");
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  async function handleResetRefinement() {
+    const resetState = {
+      date: new Date().toISOString().slice(0, 10),
+      requireCovered: false,
+      requireAccessible: false,
+      requireEv: false
+    };
+
+    await handleSearchRefinement(resetState);
+  }
+
   const activeLotId = selectedLot?.id || "";
+  const showRefinementBar = hostDisplayMode === "fullscreen";
+  const appliedRefinementState = extractRefinementState(searchResults);
 
   return (
     <main className="app-shell">
@@ -271,6 +405,15 @@ function App() {
           className="app-view__map"
         />
 
+        {showRefinementBar ? (
+          <SearchRefinementBar
+            value={appliedRefinementState}
+            isSearching={isSearching}
+            onChange={handleSearchRefinement}
+            onReset={handleResetRefinement}
+          />
+        ) : null}
+
         {isFullscreen && selectedLot ? (
           <FullscreenLayout
             lots={searchResults.results}
@@ -280,10 +423,12 @@ function App() {
             isInspectorOpen={isInspectorOpen}
             onCloseInspector={closeFullscreen}
             booking={searchResults.booking}
+            bookingNotice={bookingNotice}
             isBooking={isBooking}
             bannerMessage={bannerMessage}
             bannerTone={bannerTone}
             onBookLot={handleBookLot}
+            onDismissNotice={handleDismissNotice}
           />
         ) : searchResults.results.length ? (
           <ParkingCarousel
