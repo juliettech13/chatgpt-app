@@ -4,11 +4,15 @@ ACME Parking Assistant is a ChatGPT app built using OpenAI Apps SDK with a remot
 
 ## Overview
 
-**- MCP transport:** streamable HTTP at `/mcp`
-**- Model capabilities:** `search`, `book_lot`, `refine_widget_results`
-**- UI surface:** inline map + carousel, fullscreen lot inspection, fullscreen-only refinement, in-widget booking
-**- Data source:** SQLite-backed daily inventory seeded from `server/data/parking-seed.json`
-**- External dependencies:** Mapbox for maps, optional Sentry for telemetry
+- **MCP transport:** streamable HTTP at `/mcp`
+- **Model capabilities:** `search`, `book_lot`, `refine_widget_results`
+- **UI surface:** inline map + carousel, fullscreen lot inspection, fullscreen-only refinement, in-widget booking
+- **Data source:** SQLite-backed daily inventory seeded from `server/data/parking-seed.json`
+- **External dependencies:** Mapbox for maps, optional Sentry for telemetry
+
+## Demo
+
+[![Watch the video](https://res.cloudinary.com/dacofvu8m/image/upload/v1772842268/CleanShot_2026-03-06_at_19.10.01_2x_sfoz3p.png)](https://youtu.be/8engVwWzYro)
 
 ## Local setup
 
