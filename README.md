@@ -2,22 +2,14 @@
 
 ACME Parking Assistant is a ChatGPT app built using OpenAI Apps SDK with a remote MCP server and an embedded React UI for parking search and booking.
 
-## Overview
-
-- **MCP transport:** streamable HTTP at `/mcp`
-- **Model capabilities:** `search`, `book_lot`, `refine_widget_results`
-- **UI surface:** inline map + carousel, fullscreen lot inspection, fullscreen-only refinement, in-widget booking
-- **Data source:** SQLite-backed daily inventory seeded from `server/data/parking-seed.json`
-- **External dependencies:** Mapbox for maps, optional Sentry for telemetry
-
-## Local setup
+## Get started ⚡️
 
 ### Prerequisites
 
 - Node.js 20+
 - a Mapbox public token
 
-### Install
+### Install packages 
 
 ```bash
 npm install
@@ -30,6 +22,8 @@ npm --prefix web install
 cp .env-example .env
 ```
 
+Add your Mapbox public token or [use mine](https://share.1password.com/s#zDiHS1lTTMuxhOL_3HNg11H6ek2BZQrjp5TiADBmPBU).
+Sentry setup is optional. 
 
 ## Connect to ChatGPT in developer mode
 
@@ -51,7 +45,7 @@ Example with ngrok:
 ngrok http 3000
 ```
 
-Use the public HTTPS URL with `/mcp` appended, for example:
+From your terminal, copy the public HTTPS URL with `/mcp` appended, for example:
 
 ```text
 https://abc123.ngrok.app/mcp
@@ -73,34 +67,38 @@ In ChatGPT web:
 
 ### 4. Test in chat
 
-Open a new chat, type `/acme` and press enter. Then ask for parking availability or refinements.
+Open a new chat, type `/acme` and press enter. Then ask for parking availability through the chat.
 
-> [!NOTE]
-> If you change the tool schema, tool description, or widget metadata, restart the server and "reconnect" the app in ChatGPT before testing again. You may need to delete the App and create it again if the changes are not reflected and/or restart the ngrok tunnel to get the latest changes without ChatGPT's cache.
+## Golden prompt set 🏆
 
-## Architecture
+Use these prompts to validate the experience quickly:
+
+1. `Help me book parking for Wednesday`
+2. `How far is this from HQ?`
+3. `Is this covered?`
+4. `What’s the nearest alternative if this fills up?`
+5. `Show me only covered parking with EV charging.`
+6. `Is this lot booked?`
+7. `Book this lot.`
+
+These cover:
+
+- initial booking intent
+- in-chat follow-up questions about a selected lot
+- nearest-alternative reasoning after search
+- in-chat originated booking
+- booking-aware follow-up questions about the selected lot
+
+## Architecture 🏡
 
 ### Server
 
-The server is implemented in [server/index.ts] and registers:
+The server is implemented in `server/index.ts` and registers:
 
 - three tools: `search`, `book_lot`, `refine_widget_results`
 - one UI resource: `ui://parking/parking-browser.v4.html`
 
-The search service in [server/lib/parking-service.ts]:
-- reads live inventory from SQLite,
-- resolves the target date, applies filters, computes distance to HQ
-- Returns:
-  - `structuredContent` for the widget
-  - concise text output for the model transcript
-
-The booking service in [server/lib/booking-service.ts]:
-- persists bookings in SQLite
-- enforces one booking per `bookingContextId` per date
-- decrements availability by incrementing `reserved`
-- returns refreshed results for widget-initiated updates
-
-Tool responsibilities are intentionally split:
+#### Tools
 
 - `search`
   - chat/composer discovery entrypoint
@@ -113,13 +111,28 @@ Tool responsibilities are intentionally split:
   - if done through the widget, booking succeeds first, then the widget refreshes its current filtered view
   - if done through chat, booking succeeds and sends a confirmation message in text
 
+#### Services
+
+1) The search service in `server/lib/parking-service.ts`:
+- reads live inventory from SQLite,
+- resolves the target date, applies filters, computes distance to HQ
+- Returns:
+  - `structuredContent` for the widget
+  - concise text output for the model transcript
+
+2) The booking service in `server/lib/booking-service.ts`:
+- persists bookings in SQLite
+- enforces one booking per `bookingContextId` per date
+- decrements availability by incrementing `reserved`
+- returns refreshed results for widget-initiated updates
+
 ### Widget
 
-The widget entrypoint is [web/src/component.tsx].
+The widget entrypoint is `web/src/component.tsx`.
 
 The built assets are read from `web/dist` and inlined into the MCP resource response.
 
-The widget:
+#### Functionality
 
 - reads tool output from `window.openai`
 - renders Mapbox markers and a carousel inline for lots that match the current search request
@@ -131,7 +144,7 @@ The widget:
 - enables widget-triggered bookings
 - showcases booking success and error notifications at the fullscreen layout
 
-### Fullscreen behavior
+#### Fullscreen behavior
 
 Fullscreen is the primary browse-and-book surface:
 
@@ -139,35 +152,12 @@ Fullscreen is the primary browse-and-book surface:
 - the map shows pins/markers of lots that match the current search request
 - the right inspector shows the currently selected lot
 
+## Current limitations 👀
 
-## Golden prompt set
-
-Use these prompts to validate the experience quickly:
-
-1. `Help me book parking for Wednesday`
-2. `How far is this from HQ?`
-3. `Is this covered?`
-4. `What’s the nearest alternative if this fills up?`
-5. `Show me only covered parking with EV charging.`
-6. `Is this lot booked?`
-7. `Book this lot.`
-
-
-These cover:
-
-- initial booking intent
-- in-chat follow-up questions about a selected lot
-- nearest-alternative reasoning after search
-- fullscreen follow-up refinement through the widget
-- date handling through the picker
-- attribute filters
-- widget-originated booking
-- booking-aware follow-up questions about the selected lot
-- no-results behavior
-
-## Current limitations
-
-- chat-triggered bookings and chat-triggered fullscreen refinements are still less reliable than widget-originated interaction; the most stable path is one widget-rendering `search` turn followed by fullscreen interaction inside the widget
 - seeded SQLite inventory rather than a live parking system
 - no auth, no payment
 - no automated tests configured yet, although Sentry is enabled for telemetry
+
+## Next step: Auth 👩🏻‍💻
+
+![Auth flow](https://res.cloudinary.com/dacofvu8m/image/upload/v1772984113/acme-openai/CleanShot_2026-03-08_at_11.33.49_2x_xd5764.png)
