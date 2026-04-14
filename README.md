@@ -1,4 +1,4 @@
-# ACME Parking Assistant
+# ChatGPT App - Parking Assistant
 
 ACME Parking Assistant is a ChatGPT app built using OpenAI Apps SDK with a remote MCP server and an embedded React UI for parking search and booking.
 
